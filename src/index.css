@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-100 text-slate-800;
+}
+
+/* Animación del regalo en el login: tiembla y se eleva cada 5 segundos.
+   El movimiento ocurre en el primer ~0.7s y el resto del ciclo queda quieto. */
+@keyframes gift-wiggle {
+  0%   { transform: translateY(0)     rotate(0deg); }
+  2%   { transform: translateY(-16px) rotate(-12deg); }
+  4%   { transform: translateY(-16px) rotate(12deg); }
+  6%   { transform: translateY(-16px) rotate(-10deg); }
+  8%   { transform: translateY(-16px) rotate(10deg); }
+  10%  { transform: translateY(-16px) rotate(-6deg); }
+  12%  { transform: translateY(-16px) rotate(6deg); }
+  14%  { transform: translateY(0)     rotate(0deg); }
+  100% { transform: translateY(0)     rotate(0deg); }
+}
+
+.gift-anim {
+  display: inline-block;
+  transform-origin: 50% 100%;
+  animation: gift-wiggle 5s ease-in-out infinite;
+}
+
+/* Respeta a quienes prefieren menos movimiento */
+@media (prefers-reduced-motion: reduce) {
+  .gift-anim {
+    animation: none;
+  }
+}

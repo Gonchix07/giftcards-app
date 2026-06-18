@@ -1,0 +1,80 @@
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { Button } from './ui'
+
+export default function Layout() {
+  const { profile, isAdmin, signOut } = useAuth()
+  const navigate = useNavigate()
+
+  const adminLinks = [
+    { to: '/admin', label: 'Inicio', end: true },
+    { to: '/admin/empresas', label: 'Empresas' },
+    { to: '/admin/clientes', label: 'Clientes' },
+    { to: '/admin/giftcards', label: 'Gift Cards' },
+    { to: '/admin/reportes', label: 'Reportes' },
+  ]
+  const cajeroLinks = [{ to: '/cajero', label: 'Cobrar', end: true }]
+  const links = isAdmin ? adminLinks : cajeroLinks
+
+  async function handleLogout() {
+    await signOut()
+    navigate('/login')
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="bg-indigo-700 text-white">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <span className="font-bold text-lg">🎁 Gift Cards</span>
+            <nav className="hidden sm:flex gap-1">
+              {links.map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  end={l.end}
+                  className={({ isActive }) =>
+                    `px-3 py-1.5 rounded-lg text-sm font-medium ${
+                      isActive ? 'bg-white/20' : 'hover:bg-white/10'
+                    }`
+                  }
+                >
+                  {l.label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+          <div className="flex items-center gap-3 text-sm">
+            <span className="hidden sm:inline opacity-90">
+              {profile?.email} · {isAdmin ? 'Admin' : 'Cajero'}
+            </span>
+            <Button variant="ghost" className="text-white hover:bg-white/10" onClick={handleLogout}>
+              Salir
+            </Button>
+          </div>
+        </div>
+        {/* nav mobile */}
+        <nav className="sm:hidden flex gap-1 px-4 pb-2 overflow-x-auto">
+          {links.map((l) => (
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.end}
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded-lg text-sm whitespace-nowrap ${
+                  isActive ? 'bg-white/20' : 'hover:bg-white/10'
+                }`
+              }
+            >
+              {l.label}
+            </NavLink>
+          ))}
+        </nav>
+      </header>
+
+      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-6">
+        <Outlet />
+      </main>
+    </div>
+  )
+}
