@@ -68,7 +68,7 @@ export default function GiftCards() {
     const [c, e, cl] = await Promise.all([
       supabase
         .from('giftcards')
-        .select('*, empresas(nombre), clientes(nombre, dni)')
+        .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni)')
         .order('created_at', { ascending: false }),
       supabase.from('empresas').select('id, nombre, activo').order('nombre'),
       supabase.from('clientes').select('id, nombre, dni').order('nombre'),
@@ -103,7 +103,7 @@ export default function GiftCards() {
           saldo: monto,
           fecha_vencimiento: form.fecha_vencimiento || null,
         })
-        .select('*, empresas(nombre), clientes(nombre, dni)')
+        .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni)')
         .single()
       if (!error) {
         setLoading(false)
@@ -480,7 +480,7 @@ export default function GiftCards() {
           >
             <button
               onClick={cerrarQr}
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-700 text-xl leading-none"
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-700 text-xl leading-none z-20"
               aria-label="Cerrar"
             >
               ✕
@@ -489,10 +489,25 @@ export default function GiftCards() {
             <div ref={qrRef} className="inline-block bg-white p-3 rounded-lg border">
               <QRCodeCanvas value={qrCard.codigo} size={200} includeMargin />
             </div>
-            <p className="mt-3 font-mono text-xl font-bold tracking-widest">{qrCard.codigo}</p>
-            <p className="text-sm text-slate-500">
-              {money(qrCard.monto_max)} · {qrCard.empresas?.nombre}
-            </p>
+            {/* Código y monto a la izquierda, logo de la empresa a la derecha */}
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <div className="text-left">
+                <p className="font-mono text-xl font-bold tracking-widest">{qrCard.codigo}</p>
+                <p className="text-sm text-slate-500">{money(qrCard.monto_max)}</p>
+              </div>
+              {qrCard.empresas?.logo_url && (
+                <img
+                  src={qrCard.empresas.logo_url}
+                  alt=""
+                  className="h-14 w-14 object-contain rounded border bg-white"
+                />
+              )}
+            </div>
+            {qrCard.empresas?.comercio && (
+              <p className="text-xs text-slate-600 mt-2">
+                Solo para uso en: <strong>{qrCard.empresas.comercio}</strong>
+              </p>
+            )}
             {qrCard.fecha_vencimiento && (
               <p className="text-xs text-amber-600 mt-1">
                 Vence el {new Date(qrCard.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')}

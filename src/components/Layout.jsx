@@ -45,8 +45,14 @@ export default function Layout() {
             </nav>
           </div>
           <div className="flex items-center gap-3 text-sm">
-            <span className="hidden sm:inline opacity-90">
-              {profile?.email} · {isAdmin ? 'Admin' : 'Cajero'}
+            <span className="hidden md:inline opacity-90">{profile?.email}</span>
+            <span
+              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                isAdmin ? 'bg-amber-300 text-amber-900' : 'bg-white text-emerald-700'
+              }`}
+              title={`Rol: ${isAdmin ? 'Administrador' : 'Cajero'}`}
+            >
+              {isAdmin ? '👑 Administrador' : '🧾 Cajero'}
             </span>
             <Button variant="ghost" className="text-white hover:bg-white/10" onClick={handleLogout}>
               Salir

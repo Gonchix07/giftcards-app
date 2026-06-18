@@ -47,7 +47,7 @@ export default function Clientes() {
   }
 
   async function remove(id) {
-    if (!confirm('¿Eliminar este cliente?')) return
+    if (!confirm('¿Eliminar este cliente? (no se puede si tiene gift cards asignadas)')) return
     const { error } = await supabase.from('clientes').delete().eq('id', id)
     if (error) alert(error.message)
     else load()
