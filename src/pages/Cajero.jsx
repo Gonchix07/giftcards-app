@@ -14,6 +14,7 @@ export default function Cajero() {
   const [loading, setLoading] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [misUsos, setMisUsos] = useState([]) // historial de usos de este cajero
+  const [toast, setToast] = useState('') // aviso flotante de éxito
   const scannerRef = useRef(null)
 
   async function cargarMisUsos() {
@@ -67,13 +68,27 @@ export default function Cajero() {
     })
     setLoading(false)
     if (error) return setError(error.message)
-    setMsg(
-      `✅ Uso registrado: ${money(data.monto_usado)}. Saldo restante: ${money(data.saldo_resultante)}` +
-        (data.estado === 'agotada' ? ' (gift card agotada).' : '.')
+
+    // Aviso flotante de éxito (se oculta solo)
+    mostrarToast(
+      `Uso registrado: ${money(data.monto_usado)}` +
+        (data.estado === 'agotada' ? ' · gift card agotada' : ` · saldo ${money(data.saldo_resultante)}`)
     )
-    // refresca la tarjeta y el historial del cajero
-    buscar(card.codigo)
+
+    // Oculta los datos de la tarjeta usada y limpia el formulario
+    setCard(null)
+    setCodigo('')
+    setMonto('')
+    setError('')
+    setMsg('')
+
+    // Deja la tabla del cajero actualizada
     cargarMisUsos()
+  }
+
+  function mostrarToast(texto) {
+    setToast(texto)
+    setTimeout(() => setToast(''), 4000)
   }
 
   // ---------- Escáner QR ----------
@@ -257,6 +272,19 @@ export default function Cajero() {
           </table>
         </div>
       </Card>
+
+      {/* Aviso flotante de uso confirmado (esquina inferior derecha) */}
+      {toast && (
+        <div className="fixed bottom-5 right-5 z-50 toast-pop">
+          <div className="flex items-center gap-3 bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-lg max-w-xs">
+            <span className="grid place-items-center h-8 w-8 rounded-full bg-white/20 text-lg font-bold">✓</span>
+            <div>
+              <p className="font-semibold leading-tight">¡Uso confirmado!</p>
+              <p className="text-xs text-emerald-50">{toast}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
