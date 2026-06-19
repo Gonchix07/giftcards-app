@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { Button, Input, Select, Card, Badge } from '../components/ui'
 
-const COMERCIOS = ['Salón Mayorista', 'Tiendas Menor Coste']
+const COMERCIOS = ['HERGO Mayorista', 'Tiendas Menor Coste']
 
 // Máscara de CUIT: transforma lo escrito en XX-XXXXXXXX-X
 function formatCuit(value) {
