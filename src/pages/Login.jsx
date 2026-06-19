@@ -62,6 +62,12 @@ export default function Login() {
             {loading ? 'Ingresando…' : 'Ingresar'}
           </Button>
         </form>
+
+        <div className="mt-6 pt-4 border-t text-center text-xs text-slate-400 leading-relaxed">
+          <p className="font-medium text-slate-500">Departamento de Sistemas</p>
+          <p>HERGO | MENOR COSTE</p>
+          <p>ver.1.6.0</p>
+        </div>
       </Card>
     </div>
   )
