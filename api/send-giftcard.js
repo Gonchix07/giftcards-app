@@ -51,7 +51,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { to, nombre, codigo, montoMax, empresa, vencimiento, qrDataUrl } = req.body || {}
+    const { to, nombre, codigo, montoMax, empresa, comercio, vencimiento, qrDataUrl } = req.body || {}
     if (!to || !codigo || !qrDataUrl) {
       return res.status(400).json({ error: 'Faltan datos (to, codigo, qrDataUrl).' })
     }
@@ -67,6 +67,7 @@ export default async function handler(req, res) {
       codigo,
       monto: montoFmt,
       empresa: empresa || '',
+      comercio: comercio || '',
       vencimiento: vencimiento || '',
     }
 

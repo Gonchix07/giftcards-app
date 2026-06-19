@@ -81,7 +81,7 @@ export default function GiftCards() {
         .from('giftcards')
         .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni, email)')
         .order('created_at', { ascending: false }),
-      supabase.from('empresas').select('id, nombre, activo').order('nombre'),
+      supabase.from('empresas').select('id, nombre, activo, comercio').order('nombre'),
       supabase.from('clientes').select('id, nombre, dni, email, grupo_id').order('nombre'),
       supabase.from('grupos').select('id, nombre').order('nombre'),
     ])
@@ -196,7 +196,9 @@ export default function GiftCards() {
 
     // Opción: enviar el QR por email a cada integrante del grupo
     if (conGrupo && masivo.enviarEmails) {
-      const empresaNombre = empresas.find((x) => x.id === masivo.empresa_id)?.nombre
+      const empresaSel = empresas.find((x) => x.id === masivo.empresa_id)
+      const empresaNombre = empresaSel?.nombre
+      const empresaComercio = empresaSel?.comercio
       const venc = masivo.fecha_vencimiento
         ? new Date(masivo.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')
         : null
@@ -205,6 +207,7 @@ export default function GiftCards() {
           codigo,
           montoMax: monto,
           empresa: empresaNombre,
+          comercio: empresaComercio,
           vencimiento: venc,
           email: integrantesGrupo[i].email,
           nombre: integrantesGrupo[i].nombre,
@@ -244,6 +247,7 @@ export default function GiftCards() {
               codigo: it.codigo,
               montoMax: it.montoMax,
               empresa: it.empresa,
+              comercio: it.comercio,
               vencimiento: it.vencimiento,
               qrDataUrl: canvas.toDataURL('image/png'),
             }),
@@ -337,6 +341,7 @@ export default function GiftCards() {
           codigo: qrCard.codigo,
           montoMax: qrCard.monto_max,
           empresa: qrCard.empresas?.nombre,
+          comercio: qrCard.empresas?.comercio,
           vencimiento: qrCard.fecha_vencimiento
             ? new Date(qrCard.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')
             : null,

@@ -12,6 +12,7 @@ const EJEMPLO = {
   codigo: 'A1B2C3D4',
   monto: '$ 15.000',
   empresa: 'HERGO',
+  comercio: 'HERGO Mayorista',
   vencimiento: '31/12/2026',
 }
 
@@ -53,6 +54,7 @@ export default function Mails() {
           <code className="text-xs bg-slate-100 px-1 rounded">{'{codigo}'}</code>{' '}
           <code className="text-xs bg-slate-100 px-1 rounded">{'{monto}'}</code>{' '}
           <code className="text-xs bg-slate-100 px-1 rounded">{'{empresa}'}</code>{' '}
+          <code className="text-xs bg-slate-100 px-1 rounded">{'{comercio}'}</code>{' '}
           <code className="text-xs bg-slate-100 px-1 rounded">{'{vencimiento}'}</code>, que se reemplazan al enviar.
         </p>
         <p className="text-xs text-slate-500 mb-4">
