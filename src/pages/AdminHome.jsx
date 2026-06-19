@@ -72,7 +72,7 @@ export default function AdminHome() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="text-2xl font-bold">Panel de administración</h1>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-2">
           <label className="text-sm text-slate-500">Período:</label>
           <select
