@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Card, Badge, Button, money } from '../components/ui'
+import { Card, Badge, Button, Input, money } from '../components/ui'
 
 const estadoColor = { activa: 'green', agotada: 'slate', anulada: 'red' }
 
@@ -9,6 +9,7 @@ export default function Reportes() {
   const [cards, setCards] = useState([])
   const [txs, setTxs] = useState([])
   const [audit, setAudit] = useState([])
+  const [qAudit, setQAudit] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -41,6 +42,22 @@ export default function Reportes() {
     usuario_eliminado: 'red',
     rol_cambiado: 'amber',
   }
+
+  // Filtro de auditoría: busca el texto en cualquier campo de la fila
+  const auditFiltrado = audit.filter((a) => {
+    if (!qAudit.trim()) return true
+    const campos = [
+      new Date(a.fecha).toLocaleString('es-AR'),
+      a.usuario_email,
+      a.usuario_rol,
+      a.accion,
+      a.giftcard_codigo,
+      a.empresa,
+      a.cliente,
+      a.detalle,
+    ]
+    return campos.join(' ').toLowerCase().includes(qAudit.trim().toLowerCase())
+  })
 
   function exportCSV(rows, headers, filename) {
     const csv = [
@@ -203,12 +220,18 @@ export default function Reportes() {
       ) : (
         <Card>
           <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-            <h2 className="font-bold">Auditoría de movimientos ({audit.length})</h2>
+            <h2 className="font-bold">Auditoría de movimientos ({auditFiltrado.length})</h2>
+            <Input
+              placeholder="Filtrar por cualquier campo…"
+              value={qAudit}
+              onChange={(e) => setQAudit(e.target.value)}
+              className="w-full sm:flex-1 sm:max-w-sm"
+            />
             <Button
               variant="secondary"
               onClick={() =>
                 exportCSV(
-                  audit,
+                  auditFiltrado,
                   [
                     { label: 'FechaHora', get: (r) => new Date(r.fecha).toLocaleString('es-AR') },
                     { label: 'Usuario', get: (r) => r.usuario_email },
@@ -239,7 +262,7 @@ export default function Reportes() {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {audit.map((a) => (
+                {auditFiltrado.map((a) => (
                   <tr key={a.id} className="border-b last:border-0">
                     <td className="py-2" data-label="Fecha y hora">{new Date(a.fecha).toLocaleString('es-AR')}</td>
                     <td className="text-slate-500" data-label="Usuario">{a.usuario_email || '—'}</td>
@@ -251,10 +274,10 @@ export default function Reportes() {
                     <td className="text-slate-500" data-label="Detalle">{a.detalle || '—'}</td>
                   </tr>
                 ))}
-                {audit.length === 0 && (
+                {auditFiltrado.length === 0 && (
                   <tr>
                     <td colSpan="6" className="py-6 text-center text-slate-400">
-                      Sin movimientos registrados
+                      {qAudit ? 'Sin resultados para el filtro' : 'Sin movimientos registrados'}
                     </td>
                   </tr>
                 )}
