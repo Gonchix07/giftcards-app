@@ -4,6 +4,12 @@ import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Card, Badge, money } from '../components/ui'
 
+// Fecha de hoy en formato YYYY-MM-DD (hora local)
+function hoyLocal() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function Cajero() {
   const { user } = useAuth()
   const [codigo, setCodigo] = useState('')
@@ -15,23 +21,28 @@ export default function Cajero() {
   const [scanning, setScanning] = useState(false)
   const [misUsos, setMisUsos] = useState([]) // historial de usos de este cajero
   const [toast, setToast] = useState('') // aviso flotante de éxito
+  const [dia, setDia] = useState(hoyLocal) // día seleccionado para la tabla
   const scannerRef = useRef(null)
 
-  async function cargarMisUsos() {
+  async function cargarMisUsos(diaStr = dia) {
     if (!user?.id) return
+    // Rango [inicio, fin) del día seleccionado (hora local)
+    const inicio = new Date(diaStr + 'T00:00:00')
+    const fin = new Date(inicio.getTime() + 86400000)
     const { data } = await supabase
       .from('transacciones')
       .select('*, giftcards(codigo, empresas(nombre), clientes(nombre))')
       .eq('cajero_id', user.id)
+      .gte('created_at', inicio.toISOString())
+      .lt('created_at', fin.toISOString())
       .order('created_at', { ascending: false })
-      .limit(50)
     setMisUsos(data || [])
   }
 
   useEffect(() => {
-    cargarMisUsos()
+    cargarMisUsos(dia)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [user?.id, dia])
 
   async function buscar(cod) {
     setError('')
@@ -89,6 +100,30 @@ export default function Cajero() {
   function mostrarToast(texto) {
     setToast(texto)
     setTimeout(() => setToast(''), 4000)
+  }
+
+  // Exporta la tabla del día a un archivo que abre Excel (.xls vía HTML)
+  function exportarExcel() {
+    const filas = misUsos
+      .map(
+        (t) => `<tr>
+          <td>${new Date(t.created_at).toLocaleString('es-AR')}</td>
+          <td>${t.giftcards?.codigo || ''}</td>
+          <td>${t.giftcards?.clientes?.nombre || ''}</td>
+          <td>${Number(t.monto)}</td>
+        </tr>`
+      )
+      .join('')
+    const html = `<table border="1">
+      <thead><tr><th>Fecha</th><th>Codigo</th><th>Cliente</th><th>Monto</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table>`
+    const blob = new Blob(['﻿' + html], { type: 'application/vnd.ms-excel' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `usos-${dia}.xls`
+    link.click()
+    URL.revokeObjectURL(link.href)
   }
 
   // ---------- Escáner QR ----------
@@ -239,31 +274,50 @@ export default function Cajero() {
 
       {/* Listado visual de las gift cards usadas por este cajero */}
       <Card>
-        <h2 className="font-bold text-lg mb-4">Mis usos registrados ({misUsos.length})</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h2 className="font-bold text-lg">Mis usos registrados ({misUsos.length})</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-sm text-slate-500">Día:</label>
+            <input
+              type="date"
+              value={dia}
+              max={hoyLocal()}
+              onChange={(e) => setDia(e.target.value || hoyLocal())}
+              className="px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm"
+            />
+            <Button variant="secondary" onClick={exportarExcel} disabled={misUsos.length === 0}>
+              ⬇️ Exportar a Excel
+            </Button>
+          </div>
+        </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed text-center">
             <thead>
-              <tr className="text-center text-slate-500 border-b">
-                <th className="py-2">Fecha</th>
+              <tr className="text-slate-500 border-b">
+                <th className="py-2">Hora</th>
                 <th>Código</th>
                 <th>Cliente</th>
                 <th>Monto</th>
-                <th>Saldo result.</th>
               </tr>
             </thead>
-            <tbody className="text-center">
+            <tbody>
               {misUsos.map((t) => (
                 <tr key={t.id} className="border-b last:border-0">
-                  <td className="py-2">{new Date(t.created_at).toLocaleString('es-AR')}</td>
+                  <td className="py-2">
+                    {new Date(t.created_at).toLocaleTimeString('es-AR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false,
+                    })}
+                  </td>
                   <td className="font-mono font-semibold">{t.giftcards?.codigo}</td>
                   <td>{t.giftcards?.clientes?.nombre || '—'}</td>
                   <td className="font-medium">{money(t.monto)}</td>
-                  <td className="text-slate-500">{money(t.saldo_resultante)}</td>
                 </tr>
               ))}
               {misUsos.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="py-6 text-center text-slate-400">
+                  <td colSpan="4" className="py-6 text-center text-slate-400">
                     Todavía no registraste usos
                   </td>
                 </tr>

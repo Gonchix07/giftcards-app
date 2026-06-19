@@ -58,8 +58,8 @@ export default function Clientes() {
   )
 
   return (
-    <div className="grid md:grid-cols-3 gap-6">
-      <Card className="md:col-span-1 h-fit">
+    <div className="grid lg:grid-cols-3 gap-6">
+      <Card className="lg:col-span-1 h-fit">
         <h2 className="font-bold text-lg mb-4">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
@@ -94,13 +94,18 @@ export default function Clientes() {
         </form>
       </Card>
 
-      <Card className="md:col-span-2">
-        <div className="flex items-center justify-between mb-4 gap-3">
+      <Card className="lg:col-span-2 min-w-0">
+        <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
           <h2 className="font-bold text-lg">Clientes ({clientes.length})</h2>
-          <Input placeholder="Buscar por nombre o DNI…" value={q} onChange={(e) => setQ(e.target.value)} className="max-w-xs" />
+          <Input
+            placeholder="Buscar por nombre o DNI…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            className="w-full sm:flex-1 sm:max-w-sm"
+          />
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm responsive-table">
             <thead>
               <tr className="text-left text-slate-500 border-b">
                 <th className="py-2">Nombre</th>
@@ -112,10 +117,10 @@ export default function Clientes() {
             <tbody>
               {filtered.map((c) => (
                 <tr key={c.id} className="border-b last:border-0">
-                  <td className="py-2 font-medium">{c.nombre}</td>
-                  <td>{c.dni}</td>
-                  <td>{c.email || '—'}</td>
-                  <td className="text-right whitespace-nowrap">
+                  <td className="py-2 font-medium" data-label="Nombre">{c.nombre}</td>
+                  <td data-label="DNI">{c.dni}</td>
+                  <td data-label="Email">{c.email || '—'}</td>
+                  <td className="text-right whitespace-nowrap" data-label="Acciones">
                     <Button variant="ghost" onClick={() => startEdit(c)}>✏️</Button>
                     <Button variant="ghost" onClick={() => remove(c.id)}>🗑️</Button>
                   </td>

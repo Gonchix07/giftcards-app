@@ -84,8 +84,8 @@ export default function Empresas() {
   }
 
   return (
-    <div className="grid md:grid-cols-3 gap-6">
-      <Card className="md:col-span-1 h-fit">
+    <div className="grid lg:grid-cols-3 gap-6">
+      <Card className="lg:col-span-1 h-fit">
         <h2 className="font-bold text-lg mb-4">{editId ? 'Editar empresa' : 'Nueva empresa'}</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <Input
@@ -109,7 +109,7 @@ export default function Empresas() {
           </Select>
           <div>
             <span className="block text-sm font-medium text-slate-600 mb-1">Logo del comercio</span>
-            <div className="flex items-center gap-4 p-3 border border-dashed border-slate-300 rounded-lg bg-slate-50">
+            <div className="flex flex-wrap items-center gap-4 p-3 border border-dashed border-slate-300 rounded-lg bg-slate-50">
               {form.logo_url ? (
                 <img
                   src={form.logo_url}
@@ -174,10 +174,10 @@ export default function Empresas() {
         </form>
       </Card>
 
-      <Card className="md:col-span-2">
+      <Card className="lg:col-span-2 min-w-0">
         <h2 className="font-bold text-lg mb-4">Empresas ({empresas.length})</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm responsive-table">
             <thead>
               <tr className="text-left text-slate-500 border-b">
                 <th className="py-2">Nombre</th>
@@ -191,9 +191,9 @@ export default function Empresas() {
             <tbody>
               {empresas.map((e) => (
                 <tr key={e.id} className="border-b last:border-0">
-                  <td className="py-2 font-medium">{e.nombre}</td>
-                  <td>{e.cuit || '—'}</td>
-                  <td>
+                  <td className="py-2 font-medium" data-label="Nombre">{e.nombre}</td>
+                  <td data-label="CUIT">{e.cuit || '—'}</td>
+                  <td data-label="Logo">
                     {e.logo_url ? (
                       <img
                         src={e.logo_url}
@@ -205,9 +205,9 @@ export default function Empresas() {
                       <span className="text-slate-300">—</span>
                     )}
                   </td>
-                  <td>{e.comercio || '—'}</td>
-                  <td>{e.activo ? <Badge color="green">Activa</Badge> : <Badge>Inactiva</Badge>}</td>
-                  <td className="text-right whitespace-nowrap">
+                  <td data-label="Uso">{e.comercio || '—'}</td>
+                  <td data-label="Estado">{e.activo ? <Badge color="green">Activa</Badge> : <Badge>Inactiva</Badge>}</td>
+                  <td className="text-right whitespace-nowrap" data-label="Acciones">
                     <Button variant="ghost" onClick={() => startEdit(e)}>
                       ✏️
                     </Button>

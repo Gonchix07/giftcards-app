@@ -41,7 +41,7 @@ export default function Reportes() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Reportes</h1>
         <div className="flex gap-2">
           <Button variant={tab === 'saldos' ? 'primary' : 'secondary'} onClick={() => setTab('saldos')}>
@@ -55,7 +55,7 @@ export default function Reportes() {
 
       {tab === 'saldos' ? (
         <Card>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
             <h2 className="font-bold">Saldos por Gift Card ({cards.length})</h2>
             <Button
               variant="secondary"
@@ -81,7 +81,7 @@ export default function Reportes() {
             </Button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm responsive-table">
               <thead>
                 <tr className="text-center text-slate-500 border-b">
                   <th className="py-2">Código</th>
@@ -97,18 +97,18 @@ export default function Reportes() {
               <tbody className="text-center">
                 {cards.map((c) => (
                   <tr key={c.id} className="border-b last:border-0">
-                    <td className="py-2 font-mono font-semibold">{c.codigo}</td>
-                    <td>{c.empresas?.nombre || '—'}</td>
-                    <td>{c.clientes?.nombre || <span className="text-slate-400">sin asignar</span>}</td>
-                    <td>{money(c.monto_max)}</td>
-                    <td className="text-slate-500">{money(Number(c.monto_max) - Number(c.saldo))}</td>
-                    <td className="font-medium">{money(c.saldo)}</td>
-                    <td>
+                    <td className="py-2 font-mono font-semibold" data-label="Código">{c.codigo}</td>
+                    <td data-label="Empresa">{c.empresas?.nombre || '—'}</td>
+                    <td data-label="Cliente">{c.clientes?.nombre || <span className="text-slate-400">sin asignar</span>}</td>
+                    <td data-label="Máx.">{money(c.monto_max)}</td>
+                    <td className="text-slate-500" data-label="Usado">{money(Number(c.monto_max) - Number(c.saldo))}</td>
+                    <td className="font-medium" data-label="Saldo">{money(c.saldo)}</td>
+                    <td data-label="Vence">
                       {c.fecha_vencimiento
                         ? new Date(c.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')
                         : '—'}
                     </td>
-                    <td>
+                    <td data-label="Estado">
                       {c.estado === 'activa' &&
                       c.fecha_vencimiento &&
                       new Date(c.fecha_vencimiento + 'T00:00:00') < new Date(new Date().toDateString()) ? (
@@ -125,7 +125,7 @@ export default function Reportes() {
         </Card>
       ) : (
         <Card>
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
             <h2 className="font-bold">Historial de usos ({txs.length})</h2>
             <Button
               variant="secondary"
@@ -149,7 +149,7 @@ export default function Reportes() {
             </Button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm responsive-table">
               <thead>
                 <tr className="text-center text-slate-500 border-b">
                   <th className="py-2">Fecha</th>
@@ -163,12 +163,12 @@ export default function Reportes() {
               <tbody className="text-center">
                 {txs.map((t) => (
                   <tr key={t.id} className="border-b last:border-0">
-                    <td className="py-2">{new Date(t.created_at).toLocaleString('es-AR')}</td>
-                    <td className="font-mono font-semibold">{t.giftcards?.codigo}</td>
-                    <td>{t.giftcards?.clientes?.nombre || '—'}</td>
-                    <td className="font-medium">{money(t.monto)}</td>
-                    <td className="text-slate-500">{money(t.saldo_resultante)}</td>
-                    <td className="text-slate-500">{t.cajero_email || '—'}</td>
+                    <td className="py-2" data-label="Fecha">{new Date(t.created_at).toLocaleString('es-AR')}</td>
+                    <td className="font-mono font-semibold" data-label="Código">{t.giftcards?.codigo}</td>
+                    <td data-label="Cliente">{t.giftcards?.clientes?.nombre || '—'}</td>
+                    <td className="font-medium" data-label="Monto">{money(t.monto)}</td>
+                    <td className="text-slate-500" data-label="Saldo result.">{money(t.saldo_resultante)}</td>
+                    <td className="text-slate-500" data-label="Cajero">{t.cajero_email || '—'}</td>
                   </tr>
                 ))}
                 {txs.length === 0 && (

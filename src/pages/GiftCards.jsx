@@ -371,7 +371,7 @@ export default function GiftCards() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm responsive-table">
             <thead>
               <tr className="text-center text-slate-500 border-b">
                 <th className="py-2 w-8">
@@ -398,7 +398,7 @@ export default function GiftCards() {
             <tbody className="text-center">
               {cardsFiltradas.map((c) => (
                 <tr key={c.id} className={`border-b last:border-0 ${selected.has(c.id) ? 'bg-indigo-50' : ''}`}>
-                  <td>
+                  <td data-label="Seleccionar">
                     <input
                       type="checkbox"
                       checked={selected.has(c.id)}
@@ -407,9 +407,9 @@ export default function GiftCards() {
                       title={eliminable(c) ? '' : 'No se puede eliminar: tiene usos'}
                     />
                   </td>
-                  <td className="py-2 font-mono font-semibold">{c.codigo}</td>
-                  <td>{c.empresas?.nombre || '—'}</td>
-                  <td>
+                  <td className="py-2 font-mono font-semibold" data-label="Código">{c.codigo}</td>
+                  <td data-label="Empresa">{c.empresas?.nombre || '—'}</td>
+                  <td data-label="Cliente">
                     {c.cliente_id ? (
                       // Ya asignada: no se puede cambiar
                       <span className="font-medium" title="El cliente asignado no se puede cambiar">
@@ -430,21 +430,21 @@ export default function GiftCards() {
                       </select>
                     )}
                   </td>
-                  <td>{money(c.monto_max)}</td>
-                  <td className="font-medium">{money(c.saldo)}</td>
-                  <td className={vencida(c) ? 'text-red-600 font-medium' : ''}>
+                  <td data-label="Máx.">{money(c.monto_max)}</td>
+                  <td className="font-medium" data-label="Saldo">{money(c.saldo)}</td>
+                  <td className={vencida(c) ? 'text-red-600 font-medium' : ''} data-label="Vence">
                     {c.fecha_vencimiento
                       ? new Date(c.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')
                       : '—'}
                   </td>
-                  <td>
+                  <td data-label="Estado">
                     {vencida(c) ? (
                       <Badge color="red">vencida</Badge>
                     ) : (
                       <Badge color={estadoColor[c.estado]}>{c.estado}</Badge>
                     )}
                   </td>
-                  <td className="whitespace-nowrap">
+                  <td className="whitespace-nowrap" data-label="Acciones">
                     <Button variant="ghost" onClick={() => setQrCard(c)} title="Ver QR">
                       🔳
                     </Button>
