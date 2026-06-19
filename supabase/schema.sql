@@ -319,6 +319,33 @@ create trigger trg_auditoria_giftcards
   for each row execute procedure public.registrar_auditoria();
 
 -- ============================================================
+--  Trigger de auditoría: cambios de rol de usuarios
+-- ============================================================
+create or replace function public.auditar_cambio_rol()
+returns trigger
+language plpgsql
+security definer set search_path = public
+as $$
+declare
+  v_email text;
+  v_rol text;
+begin
+  if new.role is distinct from old.role then
+    select email, role into v_email, v_rol from public.profiles where id = auth.uid();
+    insert into public.auditoria (usuario_email, usuario_rol, accion, detalle)
+    values (v_email, v_rol, 'rol_cambiado',
+            'Usuario ' || coalesce(new.email, '') || ': ' || old.role || ' -> ' || new.role);
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_auditar_cambio_rol on public.profiles;
+create trigger trg_auditar_cambio_rol
+  after update of role on public.profiles
+  for each row execute procedure public.auditar_cambio_rol();
+
+-- ============================================================
 --  Helper: ¿el usuario actual es admin?
 -- ============================================================
 create or replace function public.is_admin()
@@ -344,6 +371,11 @@ alter table public.auditoria      enable row level security;
 drop policy if exists "perfil propio" on public.profiles;
 create policy "perfil propio" on public.profiles
   for select using (id = auth.uid() or public.is_admin());
+
+-- profiles: el admin puede cambiar el rol de cualquier usuario
+drop policy if exists "perfiles admin update" on public.profiles;
+create policy "perfiles admin update" on public.profiles
+  for update to authenticated using (public.is_admin()) with check (public.is_admin());
 
 -- empresas: lectura para usuarios autenticados, escritura solo admin
 drop policy if exists "empresas select" on public.empresas;

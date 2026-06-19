@@ -37,6 +37,9 @@ export default function Reportes() {
     modificacion: 'slate',
     anulacion: 'red',
     eliminacion: 'red',
+    usuario_creado: 'green',
+    usuario_eliminado: 'red',
+    rol_cambiado: 'amber',
   }
 
   function exportCSV(rows, headers, filename) {

@@ -8,6 +8,7 @@ import Empresas from './pages/Empresas'
 import Clientes from './pages/Clientes'
 import GiftCards from './pages/GiftCards'
 import Reportes from './pages/Reportes'
+import Usuarios from './pages/Usuarios'
 import Cajero from './pages/Cajero'
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/admin/clientes" element={<Clientes />} />
         <Route path="/admin/giftcards" element={<GiftCards />} />
         <Route path="/admin/reportes" element={<Reportes />} />
+        <Route path="/admin/usuarios" element={<Usuarios />} />
       </Route>
 
       {/* Cajero (también accesible por admin) */}

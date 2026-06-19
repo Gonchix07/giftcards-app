@@ -12,6 +12,7 @@ export default function Layout() {
     { to: '/admin/clientes', label: 'Clientes' },
     { to: '/admin/giftcards', label: 'Gift Cards' },
     { to: '/admin/reportes', label: 'Reportes' },
+    { to: '/admin/usuarios', label: 'Usuarios' },
   ]
   const cajeroLinks = [{ to: '/cajero', label: 'Cobrar', end: true }]
   const links = isAdmin ? adminLinks : cajeroLinks
