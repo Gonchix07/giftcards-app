@@ -66,6 +66,18 @@ create table if not exists public.transacciones (
   created_at timestamptz not null default now()
 );
 
+-- ---------- Configuración del email (plantilla única) ----------
+create table if not exists public.config_email (
+  id int primary key default 1,
+  asunto text not null default 'Tu Gift Card {codigo}',
+  titulo text not null default '🎁 Tu Gift Card de {empresa}',
+  intro text not null default 'Hola {nombre}, te enviamos tu Gift Card.',
+  instrucciones text not null default 'Presentá este código o el QR adjunto en la caja para usar tu saldo (podés usarlo en compras parciales).',
+  updated_at timestamptz not null default now(),
+  constraint config_email_unica check (id = 1)
+);
+insert into public.config_email (id) values (1) on conflict (id) do nothing;
+
 -- ---------- Auditoría de movimientos ----------
 -- Sin referencias a otras tablas: los movimientos quedan siempre reflejados,
 -- aunque se elimine la gift card. No se permite eliminar registros (RLS).
@@ -366,6 +378,7 @@ alter table public.clientes       enable row level security;
 alter table public.giftcards      enable row level security;
 alter table public.transacciones  enable row level security;
 alter table public.auditoria      enable row level security;
+alter table public.config_email   enable row level security;
 
 -- profiles: cada uno ve su perfil; admin ve todos
 drop policy if exists "perfil propio" on public.profiles;
@@ -423,3 +436,11 @@ create policy "auditoria select" on public.auditoria
 drop policy if exists "auditoria insert" on public.auditoria;
 create policy "auditoria insert" on public.auditoria
   for insert to authenticated with check (true);
+
+-- config_email: lectura para todos (la usa la función de envío); escritura solo admin
+drop policy if exists "config_email select" on public.config_email;
+create policy "config_email select" on public.config_email
+  for select using (true);
+drop policy if exists "config_email admin" on public.config_email;
+create policy "config_email admin" on public.config_email
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
