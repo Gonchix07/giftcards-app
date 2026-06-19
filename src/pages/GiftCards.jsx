@@ -79,7 +79,7 @@ export default function GiftCards() {
     const [c, e, cl, gr] = await Promise.all([
       supabase
         .from('giftcards')
-        .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni)')
+        .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni, email)')
         .order('created_at', { ascending: false }),
       supabase.from('empresas').select('id, nombre, activo').order('nombre'),
       supabase.from('clientes').select('id, nombre, dni, email, grupo_id').order('nombre'),
@@ -116,7 +116,7 @@ export default function GiftCards() {
           saldo: monto,
           fecha_vencimiento: form.fecha_vencimiento || null,
         })
-        .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni)')
+        .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni, email)')
         .single()
       if (!error) {
         setLoading(false)
