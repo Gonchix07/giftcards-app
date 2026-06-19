@@ -1,19 +1,26 @@
 // Función serverless de Vercel: envía la Gift Card por email con el QR adjunto.
-// Usa Resend (https://resend.com). Configurá en Vercel las variables de entorno:
-//   RESEND_API_KEY  -> API key de Resend
-//   MAIL_FROM       -> remitente verificado, ej: "Gift Cards <giftcards@tudominio.com>"
+// Usa Brevo (https://brevo.com). Configurá en Vercel las variables de entorno:
+//   BREVO_API_KEY -> API key de Brevo (Settings -> SMTP & API -> API Keys)
+//   MAIL_FROM     -> remitente verificado, ej: "Gift Cards <giftcards@tudominio.com>"
 //
 // El front envía el QR ya generado (dataURL PNG) para adjuntarlo.
+
+// Convierte "Nombre <email@dom.com>" en { name, email }. Acepta también solo el email.
+function parseFrom(value) {
+  const m = /^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/.exec(value || '')
+  if (m) return { name: m[1] || 'Gift Cards', email: m[2] }
+  return { name: 'Gift Cards', email: (value || '').trim() }
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' })
   }
 
-  const apiKey = process.env.RESEND_API_KEY
+  const apiKey = process.env.BREVO_API_KEY
   const from = process.env.MAIL_FROM
   if (!apiKey || !from) {
-    return res.status(500).json({ error: 'Falta configurar RESEND_API_KEY o MAIL_FROM en el servidor.' })
+    return res.status(500).json({ error: 'Falta configurar BREVO_API_KEY o MAIL_FROM en el servidor.' })
   }
 
   try {
@@ -29,9 +36,7 @@ export default async function handler(req, res) {
     const montoFmt = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(
       Number(montoMax || 0)
     )
-    const venceTxt = vencimiento
-      ? `<p>Válida hasta el <strong>${vencimiento}</strong>.</p>`
-      : ''
+    const venceTxt = vencimiento ? `<p>Válida hasta el <strong>${vencimiento}</strong>.</p>` : ''
 
     const html = `
       <div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;color:#1e293b">
@@ -42,25 +47,26 @@ export default async function handler(req, res) {
         <p>Monto: <strong>${montoFmt}</strong></p>
         ${venceTxt}
         <p>Presentá este código o el QR adjunto en la caja para usar tu saldo (podés usarlo en compras parciales).</p>
-        <img src="cid:qr" alt="QR" width="200" height="200" style="border:1px solid #e2e8f0;border-radius:8px" />
       </div>`
 
-    const resp = await fetch('https://api.resend.com/emails', {
+    const sender = parseFrom(from)
+
+    const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json',
+        accept: 'application/json',
       },
       body: JSON.stringify({
-        from,
-        to: [to],
+        sender,
+        to: [{ email: to, name: nombre || undefined }],
         subject: `Tu Gift Card ${codigo}`,
-        html,
-        attachments: [
+        htmlContent: html,
+        attachment: [
           {
-            filename: `giftcard-${codigo}.png`,
-            content: base64,
-            content_id: 'qr', // permite mostrarla inline con cid:qr
+            name: `giftcard-${codigo}.png`,
+            content: base64, // base64 del PNG
           },
         ],
       }),

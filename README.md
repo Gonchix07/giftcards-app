@@ -90,17 +90,18 @@ acceso*. Si no conecta, habilitá el puerto **5173/TCP** en el Firewall.
 4. En **Settings → Environment Variables** agregá:
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `RESEND_API_KEY` *(para enviar emails — ver abajo)*
+   - `BREVO_API_KEY` *(para enviar emails — ver abajo)*
    - `MAIL_FROM` *(remitente, ej: `Gift Cards <giftcards@tudominio.com>`)*
 5. **Deploy**. El archivo [`vercel.json`](vercel.json) ya incluye el rewrite para que funcionen las rutas del SPA.
 
-### Envío de email (Resend)
+### Envío de email (Brevo)
 
-La función serverless [`api/send-giftcard.js`](api/send-giftcard.js) envía el QR por email.
+La función serverless [`api/send-giftcard.js`](api/send-giftcard.js) envía el QR por email usando [Brevo](https://brevo.com).
 
-1. Crear cuenta en https://resend.com y **verificar tu dominio** (o usar el dominio de prueba de Resend).
-2. Generar una **API Key** y cargarla en Vercel como `RESEND_API_KEY`.
-3. Definir `MAIL_FROM` con un remitente de tu dominio verificado.
+1. Crear cuenta en https://brevo.com.
+2. **Verificar tu dominio o remitente** en *Senders, Domains & Dedicated IPs* (necesario para enviar a clientes reales).
+3. Generar una **API Key** en *Settings → SMTP & API → API Keys* y cargarla en Vercel como `BREVO_API_KEY`.
+4. Definir `MAIL_FROM` con un remitente verificado (formato `Nombre <email@tudominio.com>`).
 
 > El botón **✉️ Enviar por email** aparece al emitir una gift card y usa el email del cliente asignado.
 > Las funciones `/api/*` solo corren en Vercel (o `vercel dev`), no en `npm run dev`.
