@@ -5,10 +5,17 @@ export function composeCardDataURL(qrCanvas, { codigo = '', comercio = '', monto
   const H = 567 // relación ~1.586 (tarjeta de crédito)
   const pad = 52
   const r = 36
+  const M = 40 // marco blanco alrededor de la tarjeta
   const canvas = document.createElement('canvas')
-  canvas.width = W
-  canvas.height = H
+  canvas.width = W + M * 2
+  canvas.height = H + M * 2
   const ctx = canvas.getContext('2d')
+
+  // Marco blanco (fondo)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  // Dibuja la tarjeta dentro del marco
+  ctx.translate(M, M)
 
   // Fondo negro con esquinas redondeadas
   ctx.fillStyle = '#0b0b0d'
