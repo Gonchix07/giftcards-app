@@ -1,10 +1,10 @@
 // Compone una imagen "tarjeta estilo crédito": fondo negro y QR blanco.
 // Recibe el <canvas> del QR (renderizado en blanco sobre negro) y devuelve un dataURL PNG.
 export function composeCardDataURL(qrCanvas, { codigo = '', comercio = '', monto = '' } = {}) {
-  const W = 680
-  const H = 429 // relación ~1.586 (tarjeta de crédito)
-  const pad = 40
-  const r = 28
+  const W = 900
+  const H = 567 // relación ~1.586 (tarjeta de crédito)
+  const pad = 52
+  const r = 36
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
@@ -22,30 +22,30 @@ export function composeCardDataURL(qrCanvas, { codigo = '', comercio = '', monto
 
   // Etiqueta superior
   ctx.fillStyle = '#9ca3af'
-  ctx.font = '600 20px Arial'
-  ctx.fillText('GIFT CARD', pad, pad + 18)
+  ctx.font = '600 26px Arial'
+  ctx.fillText('GIFT CARD', pad, pad + 24)
 
   // QR (blanco sobre negro) a la derecha, centrado verticalmente
-  const qrSize = 220
+  const qrSize = 300
   ctx.drawImage(qrCanvas, W - qrSize - pad, (H - qrSize) / 2, qrSize, qrSize)
 
   // Código
   ctx.fillStyle = '#ffffff'
-  ctx.font = 'bold 38px monospace'
-  ctx.fillText(codigo, pad, H - 96)
+  ctx.font = 'bold 50px monospace'
+  ctx.fillText(codigo, pad, H - 128)
 
   // Monto
   if (monto) {
     ctx.fillStyle = '#e5e7eb'
-    ctx.font = '600 22px Arial'
-    ctx.fillText(monto, pad, H - 62)
+    ctx.font = '600 30px Arial'
+    ctx.fillText(monto, pad, H - 84)
   }
 
   // Comercio
   if (comercio) {
     ctx.fillStyle = '#9ca3af'
-    ctx.font = '16px Arial'
-    ctx.fillText('Solo para uso en: ' + comercio, pad, H - 32)
+    ctx.font = '20px Arial'
+    ctx.fillText('Solo para uso en: ' + comercio, pad, H - 44)
   }
 
   return canvas.toDataURL('image/png')

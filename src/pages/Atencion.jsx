@@ -244,7 +244,7 @@ export default function Atencion() {
       {qrCard && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={cerrarQr}>
           <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 text-center relative"
+            className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 text-center relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -255,25 +255,17 @@ export default function Atencion() {
               ✕
             </button>
             {/* Tarjeta estilo crédito: fondo negro, QR blanco */}
-            <div className="bg-neutral-900 text-white rounded-2xl p-5 flex items-center gap-4 text-left shadow-lg">
+            <div className="bg-neutral-900 text-white rounded-2xl p-6 flex items-center gap-4 text-left shadow-lg">
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] tracking-[0.25em] text-neutral-400">GIFT CARD</p>
-                {qrCard.empresas?.logo_url && (
-                  <img
-                    src={qrCard.empresas.logo_url}
-                    alt=""
-                    className="h-8 mt-2 object-contain"
-                    style={{ filter: 'brightness(0) invert(1)' }}
-                  />
-                )}
-                <p className="font-mono text-lg font-bold tracking-widest mt-4 break-all">{qrCard.codigo}</p>
-                <p className="text-sm text-neutral-300 mt-1">{money(qrCard.monto_max)}</p>
+                <p className="text-xs tracking-[0.25em] text-neutral-400">GIFT CARD</p>
+                <p className="font-mono text-2xl font-bold tracking-widest mt-6 break-all">{qrCard.codigo}</p>
+                <p className="text-base text-neutral-300 mt-1">{money(qrCard.monto_max)}</p>
                 {qrCard.empresas?.comercio && (
-                  <p className="text-[11px] text-neutral-400 mt-1">Solo en: {qrCard.empresas.comercio}</p>
+                  <p className="text-xs text-neutral-400 mt-1">Solo en: {qrCard.empresas.comercio}</p>
                 )}
               </div>
               <div ref={qrRef} className="shrink-0 rounded-lg overflow-hidden">
-                <QRCodeCanvas value={qrCard.codigo} size={140} bgColor="#0b0b0d" fgColor="#ffffff" includeMargin />
+                <QRCodeCanvas value={qrCard.codigo} size={180} bgColor="#0b0b0d" fgColor="#ffffff" includeMargin />
               </div>
             </div>
             {qrCard.fecha_vencimiento && (
