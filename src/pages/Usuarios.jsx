@@ -113,9 +113,6 @@ export default function Usuarios() {
             {loading ? 'Creando…' : 'Crear usuario'}
           </Button>
         </form>
-        <p className="text-xs text-slate-400 mt-3">
-          El alta y la baja requieren la <code>SUPABASE_SERVICE_ROLE_KEY</code> configurada en el servidor (Vercel).
-        </p>
       </Card>
 
       <Card className="lg:col-span-2 min-w-0">
