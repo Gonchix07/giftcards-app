@@ -140,6 +140,7 @@ export default function Usuarios() {
                       onChange={(e) => cambiarRol(u.id, e.target.value)}
                     >
                       <option value="cajero">Cajero</option>
+                      <option value="atencion">Atención Cliente</option>
                       <option value="admin">Administrador</option>
                     </select>
                   </td>
