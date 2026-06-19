@@ -8,10 +8,11 @@ export default function Reportes() {
   const [tab, setTab] = useState('saldos')
   const [cards, setCards] = useState([])
   const [txs, setTxs] = useState([])
+  const [audit, setAudit] = useState([])
 
   useEffect(() => {
     async function load() {
-      const [c, t] = await Promise.all([
+      const [c, t, a] = await Promise.all([
         supabase
           .from('giftcards')
           .select('*, empresas(nombre), clientes(nombre, dni)')
@@ -20,12 +21,23 @@ export default function Reportes() {
           .from('transacciones')
           .select('*, giftcards(codigo, empresas(nombre), clientes(nombre, dni))')
           .order('created_at', { ascending: false }),
+        supabase.from('auditoria').select('*').order('fecha', { ascending: false }).limit(1000),
       ])
       setCards(c.data || [])
       setTxs(t.data || [])
+      setAudit(a.data || [])
     }
     load()
   }, [])
+
+  const accionColor = {
+    creacion: 'green',
+    asignacion: 'amber',
+    uso: 'slate',
+    modificacion: 'slate',
+    anulacion: 'red',
+    eliminacion: 'red',
+  }
 
   function exportCSV(rows, headers, filename) {
     const csv = [
@@ -49,6 +61,9 @@ export default function Reportes() {
           </Button>
           <Button variant={tab === 'usos' ? 'primary' : 'secondary'} onClick={() => setTab('usos')}>
             Usos
+          </Button>
+          <Button variant={tab === 'auditoria' ? 'primary' : 'secondary'} onClick={() => setTab('auditoria')}>
+            Auditoría
           </Button>
         </div>
       </div>
@@ -123,7 +138,7 @@ export default function Reportes() {
             </table>
           </div>
         </Card>
-      ) : (
+      ) : tab === 'usos' ? (
         <Card>
           <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
             <h2 className="font-bold">Historial de usos ({txs.length})</h2>
@@ -175,6 +190,68 @@ export default function Reportes() {
                   <tr>
                     <td colSpan="6" className="py-6 text-center text-slate-400">
                       Sin usos registrados
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      ) : (
+        <Card>
+          <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+            <h2 className="font-bold">Auditoría de movimientos ({audit.length})</h2>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                exportCSV(
+                  audit,
+                  [
+                    { label: 'FechaHora', get: (r) => new Date(r.fecha).toLocaleString('es-AR') },
+                    { label: 'Usuario', get: (r) => r.usuario_email },
+                    { label: 'Rol', get: (r) => r.usuario_rol },
+                    { label: 'Accion', get: (r) => r.accion },
+                    { label: 'Codigo', get: (r) => r.giftcard_codigo },
+                    { label: 'Empresa', get: (r) => r.empresa },
+                    { label: 'Cliente', get: (r) => r.cliente },
+                    { label: 'Detalle', get: (r) => r.detalle },
+                  ],
+                  'auditoria.csv'
+                )
+              }
+            >
+              ⬇️ CSV
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm responsive-table">
+              <thead>
+                <tr className="text-center text-slate-500 border-b">
+                  <th className="py-2">Fecha y hora</th>
+                  <th>Usuario</th>
+                  <th>Rol</th>
+                  <th>Acción</th>
+                  <th>Código</th>
+                  <th>Detalle</th>
+                </tr>
+              </thead>
+              <tbody className="text-center">
+                {audit.map((a) => (
+                  <tr key={a.id} className="border-b last:border-0">
+                    <td className="py-2" data-label="Fecha y hora">{new Date(a.fecha).toLocaleString('es-AR')}</td>
+                    <td className="text-slate-500" data-label="Usuario">{a.usuario_email || '—'}</td>
+                    <td data-label="Rol">{a.usuario_rol || '—'}</td>
+                    <td data-label="Acción">
+                      <Badge color={accionColor[a.accion] || 'slate'}>{a.accion}</Badge>
+                    </td>
+                    <td className="font-mono font-semibold" data-label="Código">{a.giftcard_codigo || '—'}</td>
+                    <td className="text-slate-500" data-label="Detalle">{a.detalle || '—'}</td>
+                  </tr>
+                ))}
+                {audit.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="py-6 text-center text-slate-400">
+                      Sin movimientos registrados
                     </td>
                   </tr>
                 )}
