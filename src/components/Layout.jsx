@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Button } from './ui'
 
 export default function Layout() {
-  const { profile, isAdmin, signOut } = useAuth()
+  const { profile, isAdmin, role, signOut } = useAuth()
   const navigate = useNavigate()
 
   const adminLinks = [
@@ -16,7 +16,8 @@ export default function Layout() {
     { to: '/admin/mails', label: 'Mails' },
   ]
   const cajeroLinks = [{ to: '/cajero', label: 'Cobrar', end: true }]
-  const links = isAdmin ? adminLinks : cajeroLinks
+  const atencionLinks = [{ to: '/atencion', label: 'Atención al cliente', end: true }]
+  const links = isAdmin ? adminLinks : role === 'atencion' ? atencionLinks : cajeroLinks
 
   async function handleLogout() {
     await signOut()
@@ -50,11 +51,15 @@ export default function Layout() {
             <span className="hidden md:inline opacity-90">{profile?.email}</span>
             <span
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
-                isAdmin ? 'bg-amber-300 text-amber-900' : 'bg-white text-emerald-700'
+                isAdmin
+                  ? 'bg-amber-300 text-amber-900'
+                  : role === 'atencion'
+                  ? 'bg-sky-200 text-sky-800'
+                  : 'bg-white text-emerald-700'
               }`}
-              title={`Rol: ${isAdmin ? 'Administrador' : 'Cajero'}`}
+              title={`Rol: ${isAdmin ? 'Administrador' : role === 'atencion' ? 'Atención al Cliente' : 'Cajero'}`}
             >
-              {isAdmin ? '👑 Administrador' : '🧾 Cajero'}
+              {isAdmin ? '👑 Administrador' : role === 'atencion' ? '🎧 Atención al Cliente' : '🧾 Cajero'}
             </span>
             <Button variant="ghost" className="text-white hover:bg-white/10" onClick={handleLogout}>
               Salir

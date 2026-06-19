@@ -105,6 +105,7 @@ export default function Usuarios() {
           />
           <Select label="Rol *" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
             <option value="cajero">Cajero</option>
+            <option value="atencion">Atención Cliente</option>
             <option value="admin">Administrador</option>
           </Select>
           {error && <p className="text-sm text-red-600">{error}</p>}

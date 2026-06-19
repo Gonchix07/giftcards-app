@@ -11,9 +11,10 @@ import Reportes from './pages/Reportes'
 import Usuarios from './pages/Usuarios'
 import Mails from './pages/Mails'
 import Cajero from './pages/Cajero'
+import Atencion from './pages/Atencion'
 
 export default function App() {
-  const { session, isAdmin, loading } = useAuth()
+  const { session, isAdmin, role, loading } = useAuth()
 
   return (
     <Routes>
@@ -39,12 +40,23 @@ export default function App() {
       {/* Cajero (también accesible por admin) */}
       <Route
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={['cajero']}>
             <Layout />
           </ProtectedRoute>
         }
       >
         <Route path="/cajero" element={<Cajero />} />
+      </Route>
+
+      {/* Atención al Cliente (también accesible por admin) */}
+      <Route
+        element={
+          <ProtectedRoute roles={['atencion']}>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/atencion" element={<Atencion />} />
       </Route>
 
       {/* Raíz: redirige según rol */}
@@ -57,6 +69,8 @@ export default function App() {
             <Navigate to="/login" replace />
           ) : isAdmin ? (
             <Navigate to="/admin" replace />
+          ) : role === 'atencion' ? (
+            <Navigate to="/atencion" replace />
           ) : (
             <Navigate to="/cajero" replace />
           )
