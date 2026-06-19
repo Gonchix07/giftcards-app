@@ -9,6 +9,8 @@ export default function Reportes() {
   const [cards, setCards] = useState([])
   const [txs, setTxs] = useState([])
   const [audit, setAudit] = useState([])
+  const [qSaldos, setQSaldos] = useState('')
+  const [qUsos, setQUsos] = useState('')
   const [qAudit, setQAudit] = useState('')
 
   useEffect(() => {
@@ -42,6 +44,41 @@ export default function Reportes() {
     usuario_eliminado: 'red',
     rol_cambiado: 'amber',
   }
+
+  const matchTexto = (campos, q) =>
+    !q.trim() || campos.join(' ').toLowerCase().includes(q.trim().toLowerCase())
+
+  // Filtro de saldos: busca en cualquier campo
+  const cardsFiltrado = cards.filter((c) =>
+    matchTexto(
+      [
+        c.codigo,
+        c.empresas?.nombre,
+        c.clientes?.nombre,
+        c.clientes?.dni,
+        c.monto_max,
+        c.saldo,
+        c.fecha_vencimiento,
+        c.estado,
+      ],
+      qSaldos
+    )
+  )
+
+  // Filtro de usos: busca en cualquier campo
+  const txsFiltrado = txs.filter((t) =>
+    matchTexto(
+      [
+        new Date(t.created_at).toLocaleString('es-AR'),
+        t.giftcards?.codigo,
+        t.giftcards?.clientes?.nombre,
+        t.monto,
+        t.saldo_resultante,
+        t.cajero_email,
+      ],
+      qUsos
+    )
+  )
 
   // Filtro de auditoría: busca el texto en cualquier campo de la fila
   const auditFiltrado = audit.filter((a) => {
@@ -91,12 +128,18 @@ export default function Reportes() {
       {tab === 'saldos' ? (
         <Card>
           <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-            <h2 className="font-bold">Saldos por Gift Card ({cards.length})</h2>
+            <h2 className="font-bold">Saldos por Gift Card ({cardsFiltrado.length})</h2>
+            <Input
+              placeholder="Filtrar por cualquier campo…"
+              value={qSaldos}
+              onChange={(e) => setQSaldos(e.target.value)}
+              className="w-full sm:flex-1 sm:max-w-sm"
+            />
             <Button
               variant="secondary"
               onClick={() =>
                 exportCSV(
-                  cards,
+                  cardsFiltrado,
                   [
                     { label: 'Codigo', get: (r) => r.codigo },
                     { label: 'Empresa', get: (r) => r.empresas?.nombre },
@@ -130,7 +173,7 @@ export default function Reportes() {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {cards.map((c) => (
+                {cardsFiltrado.map((c) => (
                   <tr key={c.id} className="border-b last:border-0">
                     <td className="py-2 font-mono font-semibold" data-label="Código">{c.codigo}</td>
                     <td data-label="Empresa">{c.empresas?.nombre || '—'}</td>
@@ -154,6 +197,13 @@ export default function Reportes() {
                     </td>
                   </tr>
                 ))}
+                {cardsFiltrado.length === 0 && (
+                  <tr>
+                    <td colSpan="8" className="py-6 text-center text-slate-400">
+                      {qSaldos ? 'Sin resultados para el filtro' : 'Sin gift cards'}
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -161,12 +211,18 @@ export default function Reportes() {
       ) : tab === 'usos' ? (
         <Card>
           <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-            <h2 className="font-bold">Historial de usos ({txs.length})</h2>
+            <h2 className="font-bold">Historial de usos ({txsFiltrado.length})</h2>
+            <Input
+              placeholder="Filtrar por cualquier campo…"
+              value={qUsos}
+              onChange={(e) => setQUsos(e.target.value)}
+              className="w-full sm:flex-1 sm:max-w-sm"
+            />
             <Button
               variant="secondary"
               onClick={() =>
                 exportCSV(
-                  txs,
+                  txsFiltrado,
                   [
                     { label: 'Fecha', get: (r) => new Date(r.created_at).toLocaleString('es-AR') },
                     { label: 'Codigo', get: (r) => r.giftcards?.codigo },
@@ -196,7 +252,7 @@ export default function Reportes() {
                 </tr>
               </thead>
               <tbody className="text-center">
-                {txs.map((t) => (
+                {txsFiltrado.map((t) => (
                   <tr key={t.id} className="border-b last:border-0">
                     <td className="py-2" data-label="Fecha">{new Date(t.created_at).toLocaleString('es-AR')}</td>
                     <td className="font-mono font-semibold" data-label="Código">{t.giftcards?.codigo}</td>
@@ -206,10 +262,10 @@ export default function Reportes() {
                     <td className="text-slate-500" data-label="Cajero">{t.cajero_email || '—'}</td>
                   </tr>
                 ))}
-                {txs.length === 0 && (
+                {txsFiltrado.length === 0 && (
                   <tr>
                     <td colSpan="6" className="py-6 text-center text-slate-400">
-                      Sin usos registrados
+                      {qUsos ? 'Sin resultados para el filtro' : 'Sin usos registrados'}
                     </td>
                   </tr>
                 )}
