@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { supabase } from '../supabaseClient'
 import { Button, Input, Select, Card, Badge, money } from '../components/ui'
+import { composeCardDataURL } from '../lib/cardImage'
 
 const estadoColor = { activa: 'green', agotada: 'slate', anulada: 'red' }
 
@@ -65,12 +66,22 @@ export default function Atencion() {
     setQrCard(null)
     setMailMsg('')
   }
-  function descargarQR() {
+  function tarjetaDataURL() {
     const canvas = qrRef.current?.querySelector('canvas')
-    if (!canvas) return
+    if (!canvas) return null
+    return composeCardDataURL(canvas, {
+      codigo: qrCard.codigo,
+      comercio: qrCard.empresas?.comercio || '',
+      monto: money(qrCard.monto_max),
+    })
+  }
+
+  function descargarQR() {
+    const dataUrl = tarjetaDataURL()
+    if (!dataUrl) return
     const link = document.createElement('a')
     link.download = `giftcard-${qrCard.codigo}.png`
-    link.href = canvas.toDataURL('image/png')
+    link.href = dataUrl
     link.click()
   }
   async function enviarEmail() {
@@ -80,8 +91,8 @@ export default function Atencion() {
       setMailMsg('⚠️ El cliente no tiene email cargado.')
       return
     }
-    const canvas = qrRef.current?.querySelector('canvas')
-    if (!canvas) return
+    const dataUrl = tarjetaDataURL()
+    if (!dataUrl) return
     setSending(true)
     try {
       const resp = await fetch('/api/send-giftcard', {
@@ -97,7 +108,7 @@ export default function Atencion() {
           vencimiento: qrCard.fecha_vencimiento
             ? new Date(qrCard.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')
             : null,
-          qrDataUrl: canvas.toDataURL('image/png'),
+          qrDataUrl: dataUrl,
         }),
       })
       const json = await resp.json().catch(() => ({}))
@@ -243,30 +254,30 @@ export default function Atencion() {
             >
               ✕
             </button>
-            <p className="text-sm text-slate-500 mb-3">Gift Card</p>
-            <div ref={qrRef} className="inline-block bg-white p-3 rounded-lg border">
-              <QRCodeCanvas value={qrCard.codigo} size={200} includeMargin />
-            </div>
-            <div className="mt-3 flex items-center justify-center gap-3">
-              <div className="text-left">
-                <p className="font-mono text-xl font-bold tracking-widest">{qrCard.codigo}</p>
-                <p className="text-sm text-slate-500">{money(qrCard.monto_max)}</p>
+            {/* Tarjeta estilo crédito: fondo negro, QR blanco */}
+            <div className="bg-neutral-900 text-white rounded-2xl p-5 flex items-center gap-4 text-left shadow-lg">
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] tracking-[0.25em] text-neutral-400">GIFT CARD</p>
+                {qrCard.empresas?.logo_url && (
+                  <img
+                    src={qrCard.empresas.logo_url}
+                    alt=""
+                    className="h-8 mt-2 object-contain"
+                    style={{ filter: 'brightness(0) invert(1)' }}
+                  />
+                )}
+                <p className="font-mono text-lg font-bold tracking-widest mt-4 break-all">{qrCard.codigo}</p>
+                <p className="text-sm text-neutral-300 mt-1">{money(qrCard.monto_max)}</p>
+                {qrCard.empresas?.comercio && (
+                  <p className="text-[11px] text-neutral-400 mt-1">Solo en: {qrCard.empresas.comercio}</p>
+                )}
               </div>
-              {qrCard.empresas?.logo_url && (
-                <img
-                  src={qrCard.empresas.logo_url}
-                  alt=""
-                  className="h-14 w-14 object-contain rounded border bg-white"
-                />
-              )}
+              <div ref={qrRef} className="shrink-0 rounded-lg overflow-hidden">
+                <QRCodeCanvas value={qrCard.codigo} size={140} bgColor="#0b0b0d" fgColor="#ffffff" includeMargin />
+              </div>
             </div>
-            {qrCard.empresas?.comercio && (
-              <p className="text-xs text-slate-600 mt-2">
-                Solo para uso en: <strong>{qrCard.empresas.comercio}</strong>
-              </p>
-            )}
             {qrCard.fecha_vencimiento && (
-              <p className="text-xs text-amber-600 mt-1">
+              <p className="text-xs text-amber-600 mt-2">
                 Vence el {new Date(qrCard.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')}
               </p>
             )}
