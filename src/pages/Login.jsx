@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Card } from '../components/ui'
@@ -11,23 +11,26 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  if (!authLoading && session) {
-    navigate('/', { replace: true })
-  }
+  // Si ya hay sesión (y terminó de cargar el perfil), ir a la raíz que redirige por rol
+  useEffect(() => {
+    if (!authLoading && session) {
+      navigate('/', { replace: true })
+    }
+  }, [authLoading, session, navigate])
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setLoading(true)
     const { error } = await signIn(email, password)
-    setLoading(false)
     if (error) {
+      setLoading(false)
       // Muestra el mensaje real de Supabase para poder diagnosticar
       setError(error.message || 'Email o contraseña incorrectos.')
       console.error('Login error:', error)
       return
     }
-    navigate('/', { replace: true })
+    // La redirección la maneja el useEffect cuando el perfil terminó de cargar
   }
 
   return (

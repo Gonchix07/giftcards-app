@@ -29,8 +29,10 @@ export function AuthProvider({ children }) {
     })
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      setLoading(true)
       setSession(newSession)
       await loadProfile(newSession?.user?.id)
+      setLoading(false)
     })
 
     return () => sub.subscription.unsubscribe()
