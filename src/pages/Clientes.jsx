@@ -1,20 +1,30 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
-import { Button, Input, Card } from '../components/ui'
+import { Button, Input, Select, Card } from '../components/ui'
 
-const empty = { nombre: '', dni: '', email: '' }
+const empty = { nombre: '', dni: '', email: '', grupo_id: '' }
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([])
+  const [grupos, setGrupos] = useState([])
   const [form, setForm] = useState(empty)
   const [editId, setEditId] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [q, setQ] = useState('')
 
+  // Alta de grupos
+  const [nombreGrupo, setNombreGrupo] = useState('')
+  const [grupoError, setGrupoError] = useState('')
+  const [grupoLoading, setGrupoLoading] = useState(false)
+
   async function load() {
-    const { data } = await supabase.from('clientes').select('*').order('nombre')
-    setClientes(data || [])
+    const [cl, gr] = await Promise.all([
+      supabase.from('clientes').select('*, grupos(nombre)').order('nombre'),
+      supabase.from('grupos').select('*').order('nombre'),
+    ])
+    setClientes(cl.data || [])
+    setGrupos(gr.data || [])
   }
   useEffect(() => {
     load()
@@ -22,7 +32,7 @@ export default function Clientes() {
 
   function startEdit(c) {
     setEditId(c.id)
-    setForm({ nombre: c.nombre, dni: c.dni, email: c.email || '' })
+    setForm({ nombre: c.nombre, dni: c.dni, email: c.email || '', grupo_id: c.grupo_id || '' })
   }
   function reset() {
     setForm(empty)
@@ -33,10 +43,15 @@ export default function Clientes() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setError('Ingresá una dirección de email válida.')
+      return
+    }
     setLoading(true)
+    const payload = { ...form, grupo_id: form.grupo_id || null }
     const res = editId
-      ? await supabase.from('clientes').update(form).eq('id', editId)
-      : await supabase.from('clientes').insert(form)
+      ? await supabase.from('clientes').update(payload).eq('id', editId)
+      : await supabase.from('clientes').insert(payload)
     setLoading(false)
     if (res.error) {
       setError(res.error.message.includes('duplicate') ? 'Ya existe un cliente con ese DNI.' : res.error.message)
@@ -53,46 +68,111 @@ export default function Clientes() {
     else load()
   }
 
+  // ---------- Grupos ----------
+  async function crearGrupo(e) {
+    e.preventDefault()
+    setGrupoError('')
+    if (!nombreGrupo.trim()) return
+    setGrupoLoading(true)
+    const { error } = await supabase.from('grupos').insert({ nombre: nombreGrupo.trim() })
+    setGrupoLoading(false)
+    if (error) {
+      setGrupoError(error.message.includes('duplicate') ? 'Ya existe un grupo con ese nombre.' : error.message)
+      return
+    }
+    setNombreGrupo('')
+    load()
+  }
+
+  async function eliminarGrupo(id) {
+    if (!confirm('¿Eliminar este grupo? Los clientes asignados quedarán sin grupo.')) return
+    const { error } = await supabase.from('grupos').delete().eq('id', id)
+    if (error) alert(error.message)
+    else load()
+  }
+
   const filtered = clientes.filter(
     (c) => c.nombre.toLowerCase().includes(q.toLowerCase()) || c.dni.includes(q)
   )
 
   return (
     <div className="grid lg:grid-cols-3 gap-6">
-      <Card className="lg:col-span-1 h-fit">
-        <h2 className="font-bold text-lg mb-4">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <Input
-            label="Nombre *"
-            value={form.nombre}
-            onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-            required
-          />
-          <Input
-            label="DNI *"
-            value={form.dni}
-            onChange={(e) => setForm({ ...form, dni: e.target.value })}
-            required
-          />
-          <Input
-            label="Email"
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-          />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <div className="flex gap-2">
-            <Button type="submit" disabled={loading}>
-              {editId ? 'Guardar' : 'Crear'}
-            </Button>
-            {editId && (
-              <Button type="button" variant="secondary" onClick={reset}>
-                Cancelar
+      <div className="lg:col-span-1 space-y-6">
+        <Card className="h-fit">
+          <h2 className="font-bold text-lg mb-4">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <Input
+              label="Nombre *"
+              value={form.nombre}
+              onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+              required
+            />
+            <Input
+              label="DNI *"
+              value={form.dni}
+              onChange={(e) => setForm({ ...form, dni: e.target.value })}
+              required
+            />
+            <Input
+              label="Email"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+            <Select
+              label="Grupo"
+              value={form.grupo_id}
+              onChange={(e) => setForm({ ...form, grupo_id: e.target.value })}
+            >
+              <option value="">— Sin grupo —</option>
+              {grupos.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.nombre}
+                </option>
+              ))}
+            </Select>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <div className="flex gap-2">
+              <Button type="submit" disabled={loading}>
+                {editId ? 'Guardar' : 'Crear'}
               </Button>
-            )}
-          </div>
-        </form>
-      </Card>
+              {editId && (
+                <Button type="button" variant="secondary" onClick={reset}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
+          </form>
+        </Card>
+
+        {/* Gestión de grupos */}
+        <Card className="h-fit">
+          <h2 className="font-bold text-lg mb-4">Grupos ({grupos.length})</h2>
+          <form onSubmit={crearGrupo} className="flex gap-2 items-end">
+            <Input
+              label="Nuevo grupo"
+              value={nombreGrupo}
+              onChange={(e) => setNombreGrupo(e.target.value)}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={grupoLoading}>
+              Agregar
+            </Button>
+          </form>
+          {grupoError && <p className="text-sm text-red-600 mt-2">{grupoError}</p>}
+          <ul className="mt-4 divide-y">
+            {grupos.map((g) => (
+              <li key={g.id} className="flex items-center justify-between py-2 text-sm">
+                <span className="font-medium">{g.nombre}</span>
+                <Button variant="ghost" onClick={() => eliminarGrupo(g.id)} title="Eliminar grupo">
+                  🗑️
+                </Button>
+              </li>
+            ))}
+            {grupos.length === 0 && <li className="py-3 text-center text-slate-400 text-sm">Sin grupos todavía</li>}
+          </ul>
+        </Card>
+      </div>
 
       <Card className="lg:col-span-2 min-w-0">
         <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
@@ -111,6 +191,7 @@ export default function Clientes() {
                 <th className="py-2">Nombre</th>
                 <th>DNI</th>
                 <th>Email</th>
+                <th>Grupo</th>
                 <th></th>
               </tr>
             </thead>
@@ -120,6 +201,7 @@ export default function Clientes() {
                   <td className="py-2 font-medium" data-label="Nombre">{c.nombre}</td>
                   <td data-label="DNI">{c.dni}</td>
                   <td data-label="Email">{c.email || '—'}</td>
+                  <td data-label="Grupo">{c.grupos?.nombre || '—'}</td>
                   <td className="text-right whitespace-nowrap" data-label="Acciones">
                     <Button variant="ghost" onClick={() => startEdit(c)}>✏️</Button>
                     <Button variant="ghost" onClick={() => remove(c.id)}>🗑️</Button>
@@ -128,7 +210,7 @@ export default function Clientes() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="py-6 text-center text-slate-400">
+                  <td colSpan="5" className="py-6 text-center text-slate-400">
                     Sin resultados
                   </td>
                 </tr>

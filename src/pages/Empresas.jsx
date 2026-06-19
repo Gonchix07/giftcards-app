@@ -4,6 +4,18 @@ import { Button, Input, Select, Card, Badge } from '../components/ui'
 
 const COMERCIOS = ['Salón Mayorista', 'Tiendas Menor Coste']
 
+// Máscara de CUIT: transforma lo escrito en XX-XXXXXXXX-X
+function formatCuit(value) {
+  const d = (value || '').replace(/\D/g, '').slice(0, 11)
+  const p1 = d.slice(0, 2)
+  const p2 = d.slice(2, 10)
+  const p3 = d.slice(10, 11)
+  let out = p1
+  if (d.length > 2) out += '-' + p2
+  if (d.length > 10) out += '-' + p3
+  return out
+}
+
 const empty = { nombre: '', cuit: '', comercio: '', logo_url: '', activo: true }
 
 export default function Empresas() {
@@ -94,7 +106,14 @@ export default function Empresas() {
             onChange={(e) => setForm({ ...form, nombre: e.target.value })}
             required
           />
-          <Input label="CUIT" value={form.cuit} onChange={(e) => setForm({ ...form, cuit: e.target.value })} />
+          <Input
+            label="CUIT"
+            value={form.cuit}
+            onChange={(e) => setForm({ ...form, cuit: formatCuit(e.target.value) })}
+            placeholder="XX-XXXXXXXX-X"
+            inputMode="numeric"
+            maxLength={13}
+          />
           <Select
             label="Comercio donde se usa la gift card"
             value={form.comercio}

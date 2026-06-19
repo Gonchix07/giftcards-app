@@ -25,12 +25,20 @@ create table if not exists public.empresas (
   created_at timestamptz not null default now()
 );
 
+-- ---------- Grupos de clientes ----------
+create table if not exists public.grupos (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null unique,
+  created_at timestamptz not null default now()
+);
+
 -- ---------- Clientes ----------
 create table if not exists public.clientes (
   id uuid primary key default gen_random_uuid(),
   nombre text not null,
   dni text not null unique,
   email text,
+  grupo_id uuid references public.grupos(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -240,6 +248,7 @@ $$;
 -- ============================================================
 alter table public.profiles      enable row level security;
 alter table public.empresas       enable row level security;
+alter table public.grupos         enable row level security;
 alter table public.clientes       enable row level security;
 alter table public.giftcards      enable row level security;
 alter table public.transacciones  enable row level security;
@@ -255,6 +264,14 @@ create policy "empresas select" on public.empresas
   for select to authenticated using (true);
 drop policy if exists "empresas admin" on public.empresas;
 create policy "empresas admin" on public.empresas
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- grupos: lectura para autenticados, escritura solo admin
+drop policy if exists "grupos select" on public.grupos;
+create policy "grupos select" on public.grupos
+  for select to authenticated using (true);
+drop policy if exists "grupos admin" on public.grupos;
+create policy "grupos admin" on public.grupos
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 -- clientes: igual que empresas

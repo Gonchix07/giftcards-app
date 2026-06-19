@@ -34,10 +34,20 @@ function eliminable(c) {
   return !tieneUso(c)
 }
 
+// Formateo de monto: guarda solo dígitos y muestra "$ 1.234.567" mientras se escribe
+function soloDigitos(s) {
+  return (s || '').replace(/\D/g, '')
+}
+function formatPesos(digitos) {
+  if (!digitos) return ''
+  return '$ ' + Number(digitos).toLocaleString('es-AR')
+}
+
 export default function GiftCards() {
   const [cards, setCards] = useState([])
   const [empresas, setEmpresas] = useState([])
   const [clientes, setClientes] = useState([])
+  const [grupos, setGrupos] = useState([])
   const [form, setForm] = useState({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -47,10 +57,11 @@ export default function GiftCards() {
   const qrRef = useRef(null)
 
   // Generación masiva
-  const [masivo, setMasivo] = useState({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '' })
+  const [masivo, setMasivo] = useState({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '', grupo_id: '', enviarEmails: false })
   const [masivoError, setMasivoError] = useState('')
   const [masivoMsg, setMasivoMsg] = useState('')
   const [masivoLoading, setMasivoLoading] = useState(false)
+  const [colaEmails, setColaEmails] = useState([]) // cola para enviar QR por email tras generar por grupo
 
   // Selección para borrado masivo
   const [selected, setSelected] = useState(() => new Set())
@@ -65,17 +76,19 @@ export default function GiftCards() {
   const cardsFiltradas = filtroEmpresa ? cards.filter((c) => c.empresa_id === filtroEmpresa) : cards
 
   async function load() {
-    const [c, e, cl] = await Promise.all([
+    const [c, e, cl, gr] = await Promise.all([
       supabase
         .from('giftcards')
         .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni)')
         .order('created_at', { ascending: false }),
       supabase.from('empresas').select('id, nombre, activo').order('nombre'),
-      supabase.from('clientes').select('id, nombre, dni').order('nombre'),
+      supabase.from('clientes').select('id, nombre, dni, email, grupo_id').order('nombre'),
+      supabase.from('grupos').select('id, nombre').order('nombre'),
     ])
     setCards(c.data || [])
     setEmpresas(e.data || [])
     setClientes(cl.data || [])
+    setGrupos(gr.data || [])
   }
   useEffect(() => {
     load()
@@ -127,6 +140,9 @@ export default function GiftCards() {
     else load()
   }
 
+  // Integrantes del grupo elegido en la generación masiva
+  const integrantesGrupo = masivo.grupo_id ? clientes.filter((c) => c.grupo_id === masivo.grupo_id) : []
+
   // ---------- Generación masiva ----------
   async function generarMasivo(e) {
     e.preventDefault()
@@ -135,17 +151,32 @@ export default function GiftCards() {
     const cantidad = parseInt(masivo.cantidad, 10)
     const monto = parseFloat(masivo.monto_max)
     if (!masivo.empresa_id) return setMasivoError('Elegí una empresa.')
-    if (!(cantidad > 0 && cantidad <= 500)) return setMasivoError('La cantidad debe estar entre 1 y 500.')
     if (!(monto > 0)) return setMasivoError('El monto máximo debe ser mayor a cero.')
+
+    const conGrupo = !!masivo.grupo_id
+    if (conGrupo) {
+      if (integrantesGrupo.length === 0)
+        return setMasivoError('El grupo seleccionado no tiene clientes.')
+      if (cantidad !== integrantesGrupo.length)
+        return setMasivoError(
+          `La cantidad (${cantidad || 0}) debe coincidir con los ${integrantesGrupo.length} integrantes del grupo.`
+        )
+    } else {
+      if (!(cantidad > 0 && cantidad <= 500)) return setMasivoError('La cantidad debe estar entre 1 y 500.')
+    }
     setMasivoLoading(true)
 
     // Genera códigos únicos dentro del lote
+    const total = conGrupo ? integrantesGrupo.length : cantidad
     const codigos = new Set()
-    while (codigos.size < cantidad) codigos.add(generarCodigo())
-    const filas = [...codigos].map((codigo) => ({
+    while (codigos.size < total) codigos.add(generarCodigo())
+    const codigosArr = [...codigos]
+
+    const filas = codigosArr.map((codigo, i) => ({
       codigo,
       empresa_id: masivo.empresa_id,
-      cliente_id: null, // se asigna luego desde la tabla
+      // Con grupo: una gift card por integrante (asignada). Sin grupo: queda sin asignar.
+      cliente_id: conGrupo ? integrantesGrupo[i].id : null,
       monto_max: monto,
       saldo: monto,
       fecha_vencimiento: masivo.fecha_vencimiento || null,
@@ -157,10 +188,86 @@ export default function GiftCards() {
       setMasivoError(error.message)
       return
     }
-    setMasivoMsg(`✅ Se generaron ${cantidad} gift cards. Asignales un cliente desde la tabla para poder usarlas.`)
-    setMasivo({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '' })
+    setMasivoMsg(
+      conGrupo
+        ? `✅ Se generaron ${total} gift cards, una por cada integrante del grupo.`
+        : `✅ Se generaron ${total} gift cards. Asignales un cliente desde la tabla para poder usarlas.`
+    )
+
+    // Opción: enviar el QR por email a cada integrante del grupo
+    if (conGrupo && masivo.enviarEmails) {
+      const empresaNombre = empresas.find((x) => x.id === masivo.empresa_id)?.nombre
+      const venc = masivo.fecha_vencimiento
+        ? new Date(masivo.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')
+        : null
+      setColaEmails(
+        codigosArr.map((codigo, i) => ({
+          codigo,
+          montoMax: monto,
+          empresa: empresaNombre,
+          vencimiento: venc,
+          email: integrantesGrupo[i].email,
+          nombre: integrantesGrupo[i].nombre,
+        }))
+      )
+    }
+
+    setMasivo({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '', grupo_id: '', enviarEmails: false })
     load()
   }
+
+  // Envía el QR por email a cada item de la cola (renderiza los QR ocultos y los adjunta)
+  useEffect(() => {
+    if (colaEmails.length === 0) return
+    let cancelado = false
+    ;(async () => {
+      let ok = 0,
+        sinEmail = 0,
+        fallo = 0
+      for (const it of colaEmails) {
+        if (!it.email) {
+          sinEmail++
+          continue
+        }
+        const canvas = document.querySelector(`[data-qrbulk="${it.codigo}"] canvas`)
+        if (!canvas) {
+          fallo++
+          continue
+        }
+        try {
+          const resp = await fetch('/api/send-giftcard', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: it.email,
+              nombre: it.nombre,
+              codigo: it.codigo,
+              montoMax: it.montoMax,
+              empresa: it.empresa,
+              vencimiento: it.vencimiento,
+              qrDataUrl: canvas.toDataURL('image/png'),
+            }),
+          })
+          resp.ok ? ok++ : fallo++
+        } catch {
+          fallo++
+        }
+      }
+      if (!cancelado) {
+        setMasivoMsg(
+          `✉️ Emails: ${ok} enviados` +
+            (sinEmail ? `, ${sinEmail} sin email` : '') +
+            (fallo ? `, ${fallo} con error` : '') +
+            '.'
+        )
+        setColaEmails([])
+      }
+    })()
+    return () => {
+      cancelado = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colaEmails])
 
   // ---------- Asignación de cliente desde la tabla ----------
   async function asignarCliente(cardId, clienteId) {
@@ -276,11 +383,10 @@ export default function GiftCards() {
           </Select>
           <Input
             label="Monto máximo *"
-            type="number"
-            min="0"
-            step="0.01"
-            value={form.monto_max}
-            onChange={(e) => setForm({ ...form, monto_max: e.target.value })}
+            type="text"
+            inputMode="numeric"
+            value={formatPesos(form.monto_max)}
+            onChange={(e) => setForm({ ...form, monto_max: soloDigitos(e.target.value) })}
             required
           />
           <Input
@@ -299,8 +405,9 @@ export default function GiftCards() {
       <Card>
         <h2 className="font-bold text-lg mb-1">Generar de forma masiva</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Crea varias gift cards de una empresa con el mismo monto y vencimiento. Quedan <strong>sin cliente</strong>;
-          asignalos desde la tabla de abajo (sin cliente no se pueden usar).
+          Crea varias gift cards de una empresa con el mismo monto y vencimiento. Sin grupo quedan{' '}
+          <strong>sin cliente</strong> (asignalos desde la tabla). Si elegís un <strong>grupo</strong>, se genera una
+          gift card ya asignada a cada integrante (la cantidad debe coincidir).
         </p>
         <form onSubmit={generarMasivo} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <Select
@@ -315,22 +422,38 @@ export default function GiftCards() {
               </option>
             ))}
           </Select>
+          <Select
+            label="Asignar a grupo (opcional)"
+            value={masivo.grupo_id}
+            onChange={(e) => {
+              const id = e.target.value
+              const n = id ? clientes.filter((c) => c.grupo_id === id).length : 0
+              setMasivo({ ...masivo, grupo_id: id, cantidad: id ? String(n) : masivo.cantidad })
+            }}
+          >
+            <option value="">— Sin grupo —</option>
+            {grupos.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.nombre} ({clientes.filter((c) => c.grupo_id === g.id).length})
+              </option>
+            ))}
+          </Select>
           <Input
-            label="Cantidad * (máx. 500)"
+            label="Cantidad *"
             type="number"
             min="1"
             max="500"
             value={masivo.cantidad}
             onChange={(e) => setMasivo({ ...masivo, cantidad: e.target.value })}
+            disabled={!!masivo.grupo_id}
             required
           />
           <Input
             label="Monto máximo *"
-            type="number"
-            min="0"
-            step="0.01"
-            value={masivo.monto_max}
-            onChange={(e) => setMasivo({ ...masivo, monto_max: e.target.value })}
+            type="text"
+            inputMode="numeric"
+            value={formatPesos(masivo.monto_max)}
+            onChange={(e) => setMasivo({ ...masivo, monto_max: soloDigitos(e.target.value) })}
             required
           />
           <Input
@@ -339,6 +462,16 @@ export default function GiftCards() {
             value={masivo.fecha_vencimiento}
             onChange={(e) => setMasivo({ ...masivo, fecha_vencimiento: e.target.value })}
           />
+          {masivo.grupo_id && (
+            <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
+              <input
+                type="checkbox"
+                checked={masivo.enviarEmails}
+                onChange={(e) => setMasivo({ ...masivo, enviarEmails: e.target.checked })}
+              />
+              Enviar el QR por email a cada integrante del grupo (los que tengan email cargado)
+            </label>
+          )}
           {masivoError && <p className="text-sm text-red-600 sm:col-span-2 lg:col-span-4">{masivoError}</p>}
           {masivoMsg && <p className="text-sm text-green-700 sm:col-span-2 lg:col-span-4">{masivoMsg}</p>}
           <Button type="submit" disabled={masivoLoading} className="w-full sm:col-span-2 lg:col-span-1">
@@ -467,6 +600,17 @@ export default function GiftCards() {
           </table>
         </div>
       </Card>
+
+      {/* QR ocultos para el envío masivo por email */}
+      {colaEmails.length > 0 && (
+        <div style={{ position: 'absolute', left: -9999, top: -9999 }} aria-hidden>
+          {colaEmails.map((it) => (
+            <div key={it.codigo} data-qrbulk={it.codigo}>
+              <QRCodeCanvas value={it.codigo} size={200} includeMargin />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Popup con el QR de la gift card */}
       {qrCard && (
