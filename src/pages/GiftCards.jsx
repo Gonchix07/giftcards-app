@@ -344,7 +344,11 @@ export default function GiftCards() {
         }),
       })
       const json = await resp.json().catch(() => ({}))
-      setMailMsg(resp.ok ? `✅ Email enviado a ${email}` : `❌ ${json.error || 'No se pudo enviar el email.'}`)
+      setMailMsg(
+        resp.ok
+          ? `✅ Email enviado a ${email}`
+          : `❌ ${json.error || 'No se pudo enviar el email.'}${json.detail ? ' — ' + json.detail : ''}`
+      )
     } catch (e) {
       setMailMsg('❌ ' + e.message)
     } finally {
