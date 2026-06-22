@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       const { email, password, role } = req.body || {}
       if (!email || !password) return res.status(400).json({ error: 'Faltan email o contraseña.' })
       if (String(password).length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' })
-      const rol = ['admin', 'atencion', 'cajero'].includes(role) ? role : 'cajero'
+      const rol = ['admin', 'atencion', 'tesoreria', 'cajero'].includes(role) ? role : 'cajero'
 
       const { data, error } = await admin.auth.admin.createUser({
         email,

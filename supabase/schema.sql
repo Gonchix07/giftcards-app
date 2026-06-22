@@ -9,7 +9,7 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text,
   nombre text,
-  role text not null default 'cajero' check (role in ('admin', 'cajero', 'atencion')),
+  role text not null default 'cajero' check (role in ('admin', 'cajero', 'atencion', 'tesoreria')),
   comercio text,   -- comercio asignado al cajero (null = sin restricción)
   created_at timestamptz not null default now()
 );

@@ -17,7 +17,17 @@ export default function Layout() {
   ]
   const cajeroLinks = [{ to: '/cajero', label: 'Cobrar', end: true }]
   const atencionLinks = [{ to: '/atencion', label: 'Atención al cliente', end: true }]
-  const links = isAdmin ? adminLinks : role === 'atencion' ? atencionLinks : cajeroLinks
+  const tesoreriaLinks = [
+    { to: '/admin', label: 'Inicio', end: true },
+    { to: '/admin/reportes', label: 'Reportes' },
+  ]
+  const links = isAdmin
+    ? adminLinks
+    : role === 'tesoreria'
+    ? tesoreriaLinks
+    : role === 'atencion'
+    ? atencionLinks
+    : cajeroLinks
 
   async function handleLogout() {
     await signOut()
@@ -53,13 +63,29 @@ export default function Layout() {
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
                 isAdmin
                   ? 'bg-amber-300 text-amber-900'
+                  : role === 'tesoreria'
+                  ? 'bg-violet-200 text-violet-800'
                   : role === 'atencion'
                   ? 'bg-sky-200 text-sky-800'
                   : 'bg-white text-emerald-700'
               }`}
-              title={`Rol: ${isAdmin ? 'Administrador' : role === 'atencion' ? 'Atención al Cliente' : 'Cajero'}`}
+              title={`Rol: ${
+                isAdmin
+                  ? 'Administrador'
+                  : role === 'tesoreria'
+                  ? 'Tesorería'
+                  : role === 'atencion'
+                  ? 'Atención al Cliente'
+                  : 'Cajero'
+              }`}
             >
-              {isAdmin ? '👑 Administrador' : role === 'atencion' ? '🎧 Atención al Cliente' : '🧾 Cajero'}
+              {isAdmin
+                ? '👑 Administrador'
+                : role === 'tesoreria'
+                ? '💰 Tesorería'
+                : role === 'atencion'
+                ? '🎧 Atención al Cliente'
+                : '🧾 Cajero'}
             </span>
             <Button variant="ghost" className="text-white hover:bg-white/10" onClick={handleLogout}>
               Salir

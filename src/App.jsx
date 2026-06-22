@@ -20,7 +20,19 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      {/* Admin */}
+      {/* Inicio y Reportes: admin y tesorería */}
+      <Route
+        element={
+          <ProtectedRoute roles={['tesoreria']}>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/admin" element={<AdminHome />} />
+        <Route path="/admin/reportes" element={<Reportes />} />
+      </Route>
+
+      {/* Resto del admin: solo administrador */}
       <Route
         element={
           <ProtectedRoute requireAdmin>
@@ -28,11 +40,9 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/admin" element={<AdminHome />} />
         <Route path="/admin/empresas" element={<Empresas />} />
         <Route path="/admin/clientes" element={<Clientes />} />
         <Route path="/admin/giftcards" element={<GiftCards />} />
-        <Route path="/admin/reportes" element={<Reportes />} />
         <Route path="/admin/usuarios" element={<Usuarios />} />
         <Route path="/admin/mails" element={<Mails />} />
       </Route>
@@ -67,7 +77,7 @@ export default function App() {
             <div className="min-h-screen grid place-items-center text-slate-500">Cargando…</div>
           ) : !session ? (
             <Navigate to="/login" replace />
-          ) : isAdmin ? (
+          ) : isAdmin || role === 'tesoreria' ? (
             <Navigate to="/admin" replace />
           ) : role === 'atencion' ? (
             <Navigate to="/atencion" replace />
