@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Select, Card, Badge } from '../components/ui'
 
 const empty = { email: '', password: '', role: 'cajero' }
+const COMERCIOS = ['HERGO Mayorista', 'Tiendas Menor Coste']
 
 export default function Usuarios() {
   const { user } = useAuth()
@@ -61,6 +62,14 @@ export default function Usuarios() {
     setError('')
     setMsg('')
     const { error } = await supabase.from('profiles').update({ role }).eq('id', id)
+    if (error) setError(error.message)
+    else load()
+  }
+
+  async function cambiarComercio(id, comercio) {
+    setError('')
+    setMsg('')
+    const { error } = await supabase.from('profiles').update({ comercio: comercio || null }).eq('id', id)
     if (error) setError(error.message)
     else load()
   }
@@ -124,6 +133,7 @@ export default function Usuarios() {
               <tr className="text-left text-slate-500 border-b">
                 <th className="py-2">Email</th>
                 <th>Rol</th>
+                <th>Comercio (cajero)</th>
                 <th></th>
               </tr>
             </thead>
@@ -144,6 +154,21 @@ export default function Usuarios() {
                       <option value="admin">Administrador</option>
                     </select>
                   </td>
+                  <td data-label="Comercio (cajero)">
+                    <select
+                      className="px-2 py-1 border border-slate-300 rounded-lg bg-white text-sm disabled:opacity-50"
+                      value={u.comercio || ''}
+                      disabled={u.role !== 'cajero'}
+                      onChange={(e) => cambiarComercio(u.id, e.target.value)}
+                    >
+                      <option value="">— Sin restricción —</option>
+                      {COMERCIOS.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                   <td className="text-right whitespace-nowrap" data-label="Acciones">
                     <Button variant="ghost" onClick={() => eliminarUsuario(u)} title="Eliminar usuario">
                       🗑️
@@ -153,7 +178,7 @@ export default function Usuarios() {
               ))}
               {usuarios.length === 0 && (
                 <tr>
-                  <td colSpan="3" className="py-6 text-center text-slate-400">
+                  <td colSpan="4" className="py-6 text-center text-slate-400">
                     Sin usuarios
                   </td>
                 </tr>

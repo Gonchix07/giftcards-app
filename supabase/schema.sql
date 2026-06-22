@@ -10,6 +10,7 @@ create table if not exists public.profiles (
   email text,
   nombre text,
   role text not null default 'cajero' check (role in ('admin', 'cajero', 'atencion')),
+  comercio text,   -- comercio asignado al cajero (null = sin restricción)
   created_at timestamptz not null default now()
 );
 
@@ -127,6 +128,8 @@ declare
   v_card public.giftcards%rowtype;
   v_nuevo_saldo numeric(12,2);
   v_tx public.transacciones%rowtype;
+  v_cajero_comercio text;
+  v_emp_comercio text;
 begin
   -- Bloquea la fila para evitar usos concurrentes
   select * into v_card from public.giftcards
@@ -142,6 +145,13 @@ begin
 
   if v_card.cliente_id is null then
     raise exception 'La Gift Card no tiene un cliente asignado';
+  end if;
+
+  -- El cajero solo puede canjear gift cards de su comercio asignado
+  select comercio into v_cajero_comercio from public.profiles where id = auth.uid();
+  select comercio into v_emp_comercio from public.empresas where id = v_card.empresa_id;
+  if v_cajero_comercio is not null and v_emp_comercio is distinct from v_cajero_comercio then
+    raise exception 'La Gift Card no pertenece al comercio emitido (pertenece a %)', coalesce(v_emp_comercio, 'sin comercio');
   end if;
 
   if v_card.fecha_vencimiento is not null and v_card.fecha_vencimiento < current_date then

@@ -11,7 +11,8 @@ function hoyLocal() {
 }
 
 export default function Cajero() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
+  const comercioCajero = profile?.comercio || null
   const [codigo, setCodigo] = useState('')
   const [card, setCard] = useState(null) // gift card consultada
   const [monto, setMonto] = useState('')
@@ -56,7 +57,7 @@ export default function Cajero() {
     }
     const { data, error } = await supabase
       .from('giftcards')
-      .select('*, empresas(nombre), clientes(nombre, dni)')
+      .select('*, empresas(nombre, comercio), clientes(nombre, dni)')
       .eq('codigo', code)
       .maybeSingle()
     if (error) return setError(error.message)
@@ -166,13 +167,21 @@ export default function Cajero() {
     card?.fecha_vencimiento &&
     new Date(card.fecha_vencimiento + 'T00:00:00') < new Date(new Date().toDateString())
   const sinCliente = card && !card.cliente_id
+  const otroComercio = card && comercioCajero && card.empresas?.comercio !== comercioCajero
   const usable =
-    card && card.estado === 'activa' && Number(card.saldo) > 0 && !estaVencida && !sinCliente
+    card && card.estado === 'activa' && Number(card.saldo) > 0 && !estaVencida && !sinCliente && !otroComercio
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
       <Card>
-        <h2 className="font-bold text-lg mb-4">Cobrar con Gift Card</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <h2 className="font-bold text-lg">Cobrar con Gift Card</h2>
+          {comercioCajero && (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700">
+              Comercio: {comercioCajero}
+            </span>
+          )}
+        </div>
         <div className="flex gap-2 items-end">
           <Input
             label="Código (8 caracteres)"
@@ -257,16 +266,26 @@ export default function Cajero() {
               </div>
             </div>
           ) : (
-            <p className="text-center text-slate-500 text-sm">
-              Esta gift card no admite usos (
-              {sinCliente
-                ? 'sin cliente asignado'
-                : estaVencida
-                ? 'vencida'
-                : card.estado === 'agotada'
-                ? 'sin saldo'
-                : card.estado}
-              ).
+            <p className="text-center text-sm">
+              {otroComercio ? (
+                <span className="text-red-600 font-medium">
+                  ⚠️ Esta Gift Card no pertenece al comercio emitido. Pertenece a{' '}
+                  <strong>{card.empresas?.comercio || 'otro comercio'}</strong> y vos atendés{' '}
+                  <strong>{comercioCajero}</strong>.
+                </span>
+              ) : (
+                <span className="text-slate-500">
+                  Esta gift card no admite usos (
+                  {sinCliente
+                    ? 'sin cliente asignado'
+                    : estaVencida
+                    ? 'vencida'
+                    : card.estado === 'agotada'
+                    ? 'sin saldo'
+                    : card.estado}
+                  ).
+                </span>
+              )}
             </p>
           )}
         </Card>
