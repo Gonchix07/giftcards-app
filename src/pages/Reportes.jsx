@@ -18,11 +18,11 @@ export default function Reportes() {
       const [c, t, a] = await Promise.all([
         supabase
           .from('giftcards')
-          .select('*, empresas(nombre), clientes(nombre, dni)')
+          .select('*, empresas(nombre), clientes(nombre, dni, codigo_cliente)')
           .order('created_at', { ascending: false }),
         supabase
           .from('transacciones')
-          .select('*, giftcards(codigo, empresas(nombre), clientes(nombre, dni))')
+          .select('*, giftcards(codigo, empresas(nombre), clientes(nombre, dni, codigo_cliente))')
           .order('created_at', { ascending: false }),
         supabase.from('auditoria').select('*').order('fecha', { ascending: false }).limit(1000),
       ])
@@ -56,6 +56,7 @@ export default function Reportes() {
         c.empresas?.nombre,
         c.clientes?.nombre,
         c.clientes?.dni,
+        c.clientes?.codigo_cliente,
         c.monto_max,
         c.saldo,
         c.fecha_vencimiento,
@@ -72,6 +73,7 @@ export default function Reportes() {
         new Date(t.created_at).toLocaleString('es-AR'),
         t.giftcards?.codigo,
         t.giftcards?.clientes?.nombre,
+        t.giftcards?.clientes?.codigo_cliente,
         t.monto,
         t.saldo_resultante,
         t.cajero_email,
@@ -145,6 +147,7 @@ export default function Reportes() {
                     { label: 'Empresa', get: (r) => r.empresas?.nombre },
                     { label: 'Cliente', get: (r) => r.clientes?.nombre },
                     { label: 'DNI', get: (r) => r.clientes?.dni },
+                    { label: 'CodigoCliente', get: (r) => r.clientes?.codigo_cliente },
                     { label: 'MontoMax', get: (r) => r.monto_max },
                     { label: 'Saldo', get: (r) => r.saldo },
                     { label: 'Usado', get: (r) => Number(r.monto_max) - Number(r.saldo) },
@@ -165,6 +168,7 @@ export default function Reportes() {
                   <th className="py-2">Código</th>
                   <th>Empresa</th>
                   <th>Cliente</th>
+                  <th>Cód. cliente</th>
                   <th>Máx.</th>
                   <th>Usado</th>
                   <th>Saldo</th>
@@ -178,6 +182,7 @@ export default function Reportes() {
                     <td className="py-2 font-mono font-semibold" data-label="Código">{c.codigo}</td>
                     <td data-label="Empresa">{c.empresas?.nombre || '—'}</td>
                     <td data-label="Cliente">{c.clientes?.nombre || <span className="text-slate-400">sin asignar</span>}</td>
+                    <td data-label="Cód. cliente">{c.clientes?.codigo_cliente || '—'}</td>
                     <td data-label="Máx.">{money(c.monto_max)}</td>
                     <td className="text-slate-500" data-label="Usado">{money(Number(c.monto_max) - Number(c.saldo))}</td>
                     <td className="font-medium" data-label="Saldo">{money(c.saldo)}</td>
@@ -199,7 +204,7 @@ export default function Reportes() {
                 ))}
                 {cardsFiltrado.length === 0 && (
                   <tr>
-                    <td colSpan="8" className="py-6 text-center text-slate-400">
+                    <td colSpan="9" className="py-6 text-center text-slate-400">
                       {qSaldos ? 'Sin resultados para el filtro' : 'Sin gift cards'}
                     </td>
                   </tr>
@@ -228,6 +233,7 @@ export default function Reportes() {
                     { label: 'Codigo', get: (r) => r.giftcards?.codigo },
                     { label: 'Empresa', get: (r) => r.giftcards?.empresas?.nombre },
                     { label: 'Cliente', get: (r) => r.giftcards?.clientes?.nombre },
+                    { label: 'CodigoCliente', get: (r) => r.giftcards?.clientes?.codigo_cliente },
                     { label: 'Monto', get: (r) => r.monto },
                     { label: 'SaldoResultante', get: (r) => r.saldo_resultante },
                     { label: 'Cajero', get: (r) => r.cajero_email },
@@ -246,6 +252,7 @@ export default function Reportes() {
                   <th className="py-2">Fecha</th>
                   <th>Código</th>
                   <th>Cliente</th>
+                  <th>Cód. cliente</th>
                   <th>Monto</th>
                   <th>Saldo result.</th>
                   <th>Cajero</th>
@@ -257,6 +264,7 @@ export default function Reportes() {
                     <td className="py-2" data-label="Fecha">{new Date(t.created_at).toLocaleString('es-AR')}</td>
                     <td className="font-mono font-semibold" data-label="Código">{t.giftcards?.codigo}</td>
                     <td data-label="Cliente">{t.giftcards?.clientes?.nombre || '—'}</td>
+                    <td data-label="Cód. cliente">{t.giftcards?.clientes?.codigo_cliente || '—'}</td>
                     <td className="font-medium" data-label="Monto">{money(t.monto)}</td>
                     <td className="text-slate-500" data-label="Saldo result.">{money(t.saldo_resultante)}</td>
                     <td className="text-slate-500" data-label="Cajero">{t.cajero_email || '—'}</td>
@@ -264,7 +272,7 @@ export default function Reportes() {
                 ))}
                 {txsFiltrado.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="py-6 text-center text-slate-400">
+                    <td colSpan="7" className="py-6 text-center text-slate-400">
                       {qUsos ? 'Sin resultados para el filtro' : 'Sin usos registrados'}
                     </td>
                   </tr>
