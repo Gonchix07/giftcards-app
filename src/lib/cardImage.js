@@ -1,6 +1,6 @@
 // Color de fondo de la tarjeta según el comercio donde se usa.
 export function cardBg(comercio) {
-  return comercio === 'Tiendas Menor Coste' ? '#15803d' : '#0b0b0d'
+  return comercio === 'Tiendas Menor Coste' ? '#15803d' : '#1e3a8a'
 }
 
 // Compone una imagen "tarjeta estilo crédito" con QR blanco.
