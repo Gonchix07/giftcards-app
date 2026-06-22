@@ -1,6 +1,11 @@
-// Compone una imagen "tarjeta estilo crédito": fondo negro y QR blanco.
-// Recibe el <canvas> del QR (renderizado en blanco sobre negro) y devuelve un dataURL PNG.
-export function composeCardDataURL(qrCanvas, { codigo = '', comercio = '', monto = '' } = {}) {
+// Color de fondo de la tarjeta según el comercio donde se usa.
+export function cardBg(comercio) {
+  return comercio === 'Tiendas Menor Coste' ? '#15803d' : '#0b0b0d'
+}
+
+// Compone una imagen "tarjeta estilo crédito" con QR blanco.
+// Recibe el <canvas> del QR (renderizado en blanco sobre el mismo fondo) y devuelve un dataURL PNG.
+export function composeCardDataURL(qrCanvas, { codigo = '', comercio = '', monto = '', bg = '#0b0b0d' } = {}) {
   const W = 900
   const H = 567 // relación ~1.586 (tarjeta de crédito)
   const pad = 52
@@ -17,8 +22,8 @@ export function composeCardDataURL(qrCanvas, { codigo = '', comercio = '', monto
   // Dibuja la tarjeta dentro del marco
   ctx.translate(M, M)
 
-  // Fondo negro con esquinas redondeadas
-  ctx.fillStyle = '#0b0b0d'
+  // Fondo de la tarjeta (según comercio) con esquinas redondeadas
+  ctx.fillStyle = bg
   if (ctx.roundRect) {
     ctx.beginPath()
     ctx.roundRect(0, 0, W, H, r)

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { supabase } from '../supabaseClient'
 import { Button, Input, Select, Card, Badge, money } from '../components/ui'
-import { composeCardDataURL } from '../lib/cardImage'
+import { composeCardDataURL, cardBg } from '../lib/cardImage'
 
 // Genera un código de 8 caracteres alfanuméricos (mayúsculas + dígitos)
 function generarCodigo() {
@@ -242,6 +242,7 @@ export default function GiftCards() {
           codigo: it.codigo,
           comercio: it.comercio || '',
           monto: money(it.montoMax),
+          bg: cardBg(it.comercio),
         })
         try {
           const resp = await fetch('/api/send-giftcard', {
@@ -325,6 +326,7 @@ export default function GiftCards() {
       codigo: qrCard.codigo,
       comercio: qrCard.empresas?.comercio || '',
       monto: money(qrCard.monto_max),
+      bg: cardBg(qrCard.empresas?.comercio),
     })
   }
 
@@ -631,7 +633,7 @@ export default function GiftCards() {
         <div style={{ position: 'absolute', left: -9999, top: -9999 }} aria-hidden>
           {colaEmails.map((it) => (
             <div key={it.codigo} data-qrbulk={it.codigo}>
-              <QRCodeCanvas value={it.codigo} size={220} bgColor="#0b0b0d" fgColor="#ffffff" includeMargin />
+              <QRCodeCanvas value={it.codigo} size={220} bgColor={cardBg(it.comercio)} fgColor="#ffffff" includeMargin />
             </div>
           ))}
         </div>
@@ -654,18 +656,27 @@ export default function GiftCards() {
             >
               ✕
             </button>
-            {/* Tarjeta estilo crédito: fondo negro, QR blanco */}
-            <div className="bg-neutral-900 text-white rounded-2xl p-6 flex items-center gap-4 text-left shadow-lg">
+            {/* Tarjeta estilo crédito: fondo según comercio, QR blanco */}
+            <div
+              className="text-white rounded-2xl p-6 flex items-center gap-4 text-left shadow-lg"
+              style={{ backgroundColor: cardBg(qrCard.empresas?.comercio) }}
+            >
               <div className="flex-1 min-w-0">
-                <p className="text-xs tracking-[0.25em] text-neutral-400">GIFT CARD</p>
+                <p className="text-xs tracking-[0.25em] text-white/60">GIFT CARD</p>
                 <p className="font-mono text-2xl font-bold tracking-widest mt-6 break-all">{qrCard.codigo}</p>
-                <p className="text-base text-neutral-300 mt-1">{money(qrCard.monto_max)}</p>
+                <p className="text-base text-white/80 mt-1">{money(qrCard.monto_max)}</p>
                 {qrCard.empresas?.comercio && (
-                  <p className="text-xs text-neutral-400 mt-1">Solo en: {qrCard.empresas.comercio}</p>
+                  <p className="text-xs text-white/60 mt-1">Solo en: {qrCard.empresas.comercio}</p>
                 )}
               </div>
               <div ref={qrRef} className="shrink-0 rounded-lg overflow-hidden">
-                <QRCodeCanvas value={qrCard.codigo} size={180} bgColor="#0b0b0d" fgColor="#ffffff" includeMargin />
+                <QRCodeCanvas
+                  value={qrCard.codigo}
+                  size={180}
+                  bgColor={cardBg(qrCard.empresas?.comercio)}
+                  fgColor="#ffffff"
+                  includeMargin
+                />
               </div>
             </div>
             {qrCard.fecha_vencimiento && (
