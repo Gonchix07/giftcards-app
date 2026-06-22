@@ -14,6 +14,14 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now()
 );
 
+-- ---------- Comercios (donde se usan las gift cards) ----------
+create table if not exists public.comercios (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null unique,
+  logo_url text,
+  created_at timestamptz not null default now()
+);
+
 -- ---------- Empresas ----------
 create table if not exists public.empresas (
   id uuid primary key default gen_random_uuid(),
@@ -384,6 +392,7 @@ $$;
 -- ============================================================
 alter table public.profiles      enable row level security;
 alter table public.empresas       enable row level security;
+alter table public.comercios      enable row level security;
 alter table public.grupos         enable row level security;
 alter table public.clientes       enable row level security;
 alter table public.giftcards      enable row level security;
@@ -407,6 +416,14 @@ create policy "empresas select" on public.empresas
   for select to authenticated using (true);
 drop policy if exists "empresas admin" on public.empresas;
 create policy "empresas admin" on public.empresas
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+
+-- comercios: lectura para autenticados, escritura solo admin
+drop policy if exists "comercios select" on public.comercios;
+create policy "comercios select" on public.comercios
+  for select to authenticated using (true);
+drop policy if exists "comercios admin" on public.comercios;
+create policy "comercios admin" on public.comercios
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 -- grupos: lectura para autenticados, escritura solo admin
