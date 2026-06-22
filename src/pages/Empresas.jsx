@@ -25,7 +25,7 @@ export default function Empresas() {
   const [loading, setLoading] = useState(false)
 
   // Alta de comercios
-  const [comForm, setComForm] = useState({ nombre: '', logo_url: '' })
+  const [comForm, setComForm] = useState({ nombre: '', logo_url: '', color: '#1e3a8a' })
   const [comError, setComError] = useState('')
   const [comLoading, setComLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -102,13 +102,13 @@ export default function Empresas() {
     setComLoading(true)
     const { error } = await supabase
       .from('comercios')
-      .insert({ nombre: comForm.nombre.trim(), logo_url: comForm.logo_url || null })
+      .insert({ nombre: comForm.nombre.trim(), logo_url: comForm.logo_url || null, color: comForm.color })
     setComLoading(false)
     if (error) {
       setComError(error.message.includes('duplicate') ? 'Ya existe un comercio con ese nombre.' : error.message)
       return
     }
-    setComForm({ nombre: '', logo_url: '' })
+    setComForm({ nombre: '', logo_url: '', color: '#1e3a8a' })
     load()
   }
 
@@ -220,6 +220,15 @@ export default function Empresas() {
                 </div>
               </div>
             </div>
+            <label className="flex items-center gap-3 text-sm">
+              <span className="font-medium text-slate-600">Color de la tarjeta</span>
+              <input
+                type="color"
+                value={comForm.color}
+                onChange={(e) => setComForm({ ...comForm, color: e.target.value })}
+                className="h-8 w-12 rounded border border-slate-300 bg-white p-0.5 cursor-pointer"
+              />
+            </label>
             {comError && <p className="text-sm text-red-600">{comError}</p>}
             <Button type="submit" disabled={comLoading || uploading}>
               Agregar comercio
@@ -236,6 +245,11 @@ export default function Empresas() {
                     <span className="h-9 w-9 grid place-items-center text-slate-300">—</span>
                   )}
                   <span className="font-medium truncate">{c.nombre}</span>
+                  <span
+                    className="h-4 w-4 rounded-full border shrink-0"
+                    style={{ backgroundColor: c.color || '#1e3a8a' }}
+                    title={c.color}
+                  />
                 </div>
                 <Button variant="ghost" onClick={() => eliminarComercio(c.id)} title="Eliminar comercio">
                   🗑️

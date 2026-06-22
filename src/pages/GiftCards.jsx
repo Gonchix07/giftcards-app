@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { QRCodeCanvas } from 'qrcode.react'
 import { supabase } from '../supabaseClient'
 import { Button, Input, Select, Card, Badge, money } from '../components/ui'
-import { composeCardDataURL, cardBg } from '../lib/cardImage'
+import { composeCardDataURL } from '../lib/cardImage'
 
 // Genera un código de 8 caracteres alfanuméricos (mayúsculas + dígitos)
 function generarCodigo() {
@@ -49,6 +49,7 @@ export default function GiftCards() {
   const [empresas, setEmpresas] = useState([])
   const [clientes, setClientes] = useState([])
   const [grupos, setGrupos] = useState([])
+  const [comercios, setComercios] = useState([])
   const [form, setForm] = useState({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -77,7 +78,7 @@ export default function GiftCards() {
   const cardsFiltradas = filtroEmpresa ? cards.filter((c) => c.empresa_id === filtroEmpresa) : cards
 
   async function load() {
-    const [c, e, cl, gr] = await Promise.all([
+    const [c, e, cl, gr, co] = await Promise.all([
       supabase
         .from('giftcards')
         .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni, email)')
@@ -85,12 +86,15 @@ export default function GiftCards() {
       supabase.from('empresas').select('id, nombre, activo, comercio').order('nombre'),
       supabase.from('clientes').select('id, nombre, dni, email, grupo_id').order('nombre'),
       supabase.from('grupos').select('id, nombre').order('nombre'),
+      supabase.from('comercios').select('nombre, color'),
     ])
     setCards(c.data || [])
     setEmpresas(e.data || [])
     setClientes(cl.data || [])
     setGrupos(gr.data || [])
+    setComercios(co.data || [])
   }
+  const colorComercio = (nombre) => comercios.find((x) => x.nombre === nombre)?.color || '#1e3a8a'
   useEffect(() => {
     load()
   }, [])
@@ -209,6 +213,7 @@ export default function GiftCards() {
           montoMax: monto,
           empresa: empresaNombre,
           comercio: empresaComercio,
+          color: colorComercio(empresaComercio),
           vencimiento: venc,
           email: integrantesGrupo[i].email,
           nombre: integrantesGrupo[i].nombre,
@@ -242,7 +247,7 @@ export default function GiftCards() {
           codigo: it.codigo,
           comercio: it.comercio || '',
           monto: money(it.montoMax),
-          bg: cardBg(it.comercio),
+          bg: it.color,
         })
         try {
           const resp = await fetch('/api/send-giftcard', {
@@ -326,7 +331,7 @@ export default function GiftCards() {
       codigo: qrCard.codigo,
       comercio: qrCard.empresas?.comercio || '',
       monto: money(qrCard.monto_max),
-      bg: cardBg(qrCard.empresas?.comercio),
+      bg: colorComercio(qrCard.empresas?.comercio),
     })
   }
 
@@ -633,7 +638,7 @@ export default function GiftCards() {
         <div style={{ position: 'absolute', left: -9999, top: -9999 }} aria-hidden>
           {colaEmails.map((it) => (
             <div key={it.codigo} data-qrbulk={it.codigo}>
-              <QRCodeCanvas value={it.codigo} size={220} bgColor={cardBg(it.comercio)} fgColor="#ffffff" includeMargin />
+              <QRCodeCanvas value={it.codigo} size={220} bgColor={it.color} fgColor="#ffffff" includeMargin />
             </div>
           ))}
         </div>
@@ -659,7 +664,7 @@ export default function GiftCards() {
             {/* Tarjeta estilo crédito: fondo según comercio, QR blanco */}
             <div
               className="text-white rounded-2xl p-6 flex items-center gap-4 text-left shadow-lg"
-              style={{ backgroundColor: cardBg(qrCard.empresas?.comercio) }}
+              style={{ backgroundColor: colorComercio(qrCard.empresas?.comercio) }}
             >
               <div className="flex-1 min-w-0">
                 <p className="text-xs tracking-[0.25em] text-white/60">GIFT CARD</p>
@@ -673,7 +678,7 @@ export default function GiftCards() {
                 <QRCodeCanvas
                   value={qrCard.codigo}
                   size={180}
-                  bgColor={cardBg(qrCard.empresas?.comercio)}
+                  bgColor={colorComercio(qrCard.empresas?.comercio)}
                   fgColor="#ffffff"
                   includeMargin
                 />

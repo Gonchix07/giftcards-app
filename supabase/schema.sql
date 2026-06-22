@@ -19,6 +19,7 @@ create table if not exists public.comercios (
   id uuid primary key default gen_random_uuid(),
   nombre text not null unique,
   logo_url text,
+  color text not null default '#1e3a8a',   -- color de fondo de la tarjeta
   created_at timestamptz not null default now()
 );
 

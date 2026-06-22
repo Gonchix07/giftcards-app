@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { supabase } from '../supabaseClient'
 import { Button, Input, Select, Card, Badge, money } from '../components/ui'
-import { composeCardDataURL, cardBg } from '../lib/cardImage'
+import { composeCardDataURL } from '../lib/cardImage'
 
 const estadoColor = { activa: 'green', agotada: 'slate', anulada: 'red' }
 
@@ -26,7 +26,16 @@ export default function Atencion() {
   const [qrCard, setQrCard] = useState(null)
   const [mailMsg, setMailMsg] = useState('')
   const [sending, setSending] = useState(false)
+  const [comercios, setComercios] = useState([])
   const qrRef = useRef(null)
+
+  useEffect(() => {
+    supabase
+      .from('comercios')
+      .select('nombre, color')
+      .then(({ data }) => setComercios(data || []))
+  }, [])
+  const colorComercio = (nombre) => comercios.find((x) => x.nombre === nombre)?.color || '#1e3a8a'
 
   async function buscar(e) {
     e?.preventDefault()
@@ -73,7 +82,7 @@ export default function Atencion() {
       codigo: qrCard.codigo,
       comercio: qrCard.empresas?.comercio || '',
       monto: money(qrCard.monto_max),
-      bg: cardBg(qrCard.empresas?.comercio),
+      bg: colorComercio(qrCard.empresas?.comercio),
     })
   }
 
@@ -258,7 +267,7 @@ export default function Atencion() {
             {/* Tarjeta estilo crédito: fondo según comercio, QR blanco */}
             <div
               className="text-white rounded-2xl p-6 flex items-center gap-4 text-left shadow-lg"
-              style={{ backgroundColor: cardBg(qrCard.empresas?.comercio) }}
+              style={{ backgroundColor: colorComercio(qrCard.empresas?.comercio) }}
             >
               <div className="flex-1 min-w-0">
                 <p className="text-xs tracking-[0.25em] text-white/60">GIFT CARD</p>
@@ -272,7 +281,7 @@ export default function Atencion() {
                 <QRCodeCanvas
                   value={qrCard.codigo}
                   size={180}
-                  bgColor={cardBg(qrCard.empresas?.comercio)}
+                  bgColor={colorComercio(qrCard.empresas?.comercio)}
                   fgColor="#ffffff"
                   includeMargin
                 />

@@ -10,8 +10,16 @@ create table if not exists public.comercios (
   id uuid primary key default gen_random_uuid(),
   nombre text not null unique,
   logo_url text,
+  color text not null default '#1e3a8a',
   created_at timestamptz not null default now()
 );
+
+-- Si la tabla ya existía, agrega la columna de color
+alter table public.comercios add column if not exists color text not null default '#1e3a8a';
+
+-- Color inicial para los comercios conocidos
+update public.comercios set color = '#15803d' where nombre = 'Tiendas Menor Coste';
+update public.comercios set color = '#1e3a8a' where nombre = 'HERGO Mayorista';
 
 alter table public.comercios enable row level security;
 
