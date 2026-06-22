@@ -39,6 +39,7 @@ create table if not exists public.clientes (
   nombre text not null,
   dni text not null unique,
   email text,
+  codigo_cliente text unique check (codigo_cliente is null or codigo_cliente ~ '^[A-Za-z0-9]{5}$'),
   grupo_id uuid references public.grupos(id) on delete set null,
   created_at timestamptz not null default now()
 );

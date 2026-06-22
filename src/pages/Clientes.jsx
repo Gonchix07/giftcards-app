@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { Button, Input, Select, Card } from '../components/ui'
 
-const empty = { nombre: '', dni: '', email: '', grupo_id: '' }
+const empty = { nombre: '', dni: '', email: '', codigo_cliente: '', grupo_id: '' }
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([])
@@ -32,7 +32,13 @@ export default function Clientes() {
 
   function startEdit(c) {
     setEditId(c.id)
-    setForm({ nombre: c.nombre, dni: c.dni, email: c.email || '', grupo_id: c.grupo_id || '' })
+    setForm({
+      nombre: c.nombre,
+      dni: c.dni,
+      email: c.email || '',
+      codigo_cliente: c.codigo_cliente || '',
+      grupo_id: c.grupo_id || '',
+    })
   }
   function reset() {
     setForm(empty)
@@ -47,14 +53,21 @@ export default function Clientes() {
       setError('Ingresá una dirección de email válida.')
       return
     }
+    if (form.codigo_cliente && !/^[A-Za-z0-9]{5}$/.test(form.codigo_cliente)) {
+      setError('El código de cliente debe tener 5 caracteres alfanuméricos.')
+      return
+    }
     setLoading(true)
-    const payload = { ...form, grupo_id: form.grupo_id || null }
+    const payload = { ...form, grupo_id: form.grupo_id || null, codigo_cliente: form.codigo_cliente || null }
     const res = editId
       ? await supabase.from('clientes').update(payload).eq('id', editId)
       : await supabase.from('clientes').insert(payload)
     setLoading(false)
     if (res.error) {
-      setError(res.error.message.includes('duplicate') ? 'Ya existe un cliente con ese DNI.' : res.error.message)
+      const m = res.error.message
+      if (m.includes('codigo_cliente')) setError('Ya existe un cliente con ese código.')
+      else if (m.includes('duplicate') || m.includes('dni')) setError('Ya existe un cliente con ese DNI.')
+      else setError(m)
       return
     }
     reset()
@@ -92,7 +105,10 @@ export default function Clientes() {
   }
 
   const filtered = clientes.filter(
-    (c) => c.nombre.toLowerCase().includes(q.toLowerCase()) || c.dni.includes(q)
+    (c) =>
+      c.nombre.toLowerCase().includes(q.toLowerCase()) ||
+      c.dni.includes(q) ||
+      (c.codigo_cliente || '').toLowerCase().includes(q.toLowerCase())
   )
 
   return (
@@ -118,6 +134,14 @@ export default function Clientes() {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+            <Input
+              label="Código de cliente (opcional, 5 caracteres)"
+              value={form.codigo_cliente}
+              maxLength={5}
+              onChange={(e) =>
+                setForm({ ...form, codigo_cliente: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })
+              }
             />
             <Select
               label="Grupo"
@@ -190,6 +214,7 @@ export default function Clientes() {
               <tr className="text-left text-slate-500 border-b">
                 <th className="py-2">Nombre</th>
                 <th>DNI</th>
+                <th>Código</th>
                 <th>Email</th>
                 <th>Grupo</th>
                 <th></th>
@@ -200,6 +225,7 @@ export default function Clientes() {
                 <tr key={c.id} className="border-b last:border-0">
                   <td className="py-2 font-medium" data-label="Nombre">{c.nombre}</td>
                   <td data-label="DNI">{c.dni}</td>
+                  <td data-label="Código">{c.codigo_cliente || '—'}</td>
                   <td data-label="Email">{c.email || '—'}</td>
                   <td data-label="Grupo">{c.grupos?.nombre || '—'}</td>
                   <td className="text-right whitespace-nowrap" data-label="Acciones">
@@ -210,7 +236,7 @@ export default function Clientes() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="py-6 text-center text-slate-400">
+                  <td colSpan="6" className="py-6 text-center text-slate-400">
                     Sin resultados
                   </td>
                 </tr>
