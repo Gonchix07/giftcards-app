@@ -26,6 +26,7 @@ export default function Empresas() {
 
   // Alta de comercios
   const [comForm, setComForm] = useState({ nombre: '', logo_url: '', color: '#1e3a8a' })
+  const [comEditId, setComEditId] = useState(null)
   const [comError, setComError] = useState('')
   const [comLoading, setComLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
@@ -95,20 +96,40 @@ export default function Empresas() {
     setUploading(false)
   }
 
+  function startEditComercio(c) {
+    setComEditId(c.id)
+    setComError('')
+    setComForm({ nombre: c.nombre, logo_url: c.logo_url || '', color: c.color || '#1e3a8a' })
+  }
+  function resetComercio() {
+    setComEditId(null)
+    setComError('')
+    setComForm({ nombre: '', logo_url: '', color: '#1e3a8a' })
+  }
+
   async function crearComercio(e) {
     e.preventDefault()
     setComError('')
     if (!comForm.nombre.trim()) return
     setComLoading(true)
-    const { error } = await supabase
-      .from('comercios')
-      .insert({ nombre: comForm.nombre.trim(), logo_url: comForm.logo_url || null, color: comForm.color })
-    setComLoading(false)
+    const nuevoNombre = comForm.nombre.trim()
+    const payload = { nombre: nuevoNombre, logo_url: comForm.logo_url || null, color: comForm.color }
+    const nombreAnterior = comEditId ? comercios.find((c) => c.id === comEditId)?.nombre : null
+    const { error } = comEditId
+      ? await supabase.from('comercios').update(payload).eq('id', comEditId)
+      : await supabase.from('comercios').insert(payload)
     if (error) {
+      setComLoading(false)
       setComError(error.message.includes('duplicate') ? 'Ya existe un comercio con ese nombre.' : error.message)
       return
     }
-    setComForm({ nombre: '', logo_url: '', color: '#1e3a8a' })
+    // Si cambió el nombre, propaga a empresas y cajeros que lo referencian por nombre
+    if (nombreAnterior && nombreAnterior !== nuevoNombre) {
+      await supabase.from('empresas').update({ comercio: nuevoNombre }).eq('comercio', nombreAnterior)
+      await supabase.from('profiles').update({ comercio: nuevoNombre }).eq('comercio', nombreAnterior)
+    }
+    setComLoading(false)
+    resetComercio()
     load()
   }
 
@@ -230,9 +251,16 @@ export default function Empresas() {
               />
             </label>
             {comError && <p className="text-sm text-red-600">{comError}</p>}
-            <Button type="submit" disabled={comLoading || uploading}>
-              Agregar comercio
-            </Button>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={comLoading || uploading}>
+                {comEditId ? 'Guardar' : 'Agregar comercio'}
+              </Button>
+              {comEditId && (
+                <Button type="button" variant="secondary" onClick={resetComercio}>
+                  Cancelar
+                </Button>
+              )}
+            </div>
           </form>
 
           <ul className="mt-4 divide-y">
@@ -251,9 +279,14 @@ export default function Empresas() {
                     title={c.color}
                   />
                 </div>
-                <Button variant="ghost" onClick={() => eliminarComercio(c.id)} title="Eliminar comercio">
-                  🗑️
-                </Button>
+                <div className="flex shrink-0">
+                  <Button variant="ghost" onClick={() => startEditComercio(c)} title="Editar comercio">
+                    ✏️
+                  </Button>
+                  <Button variant="ghost" onClick={() => eliminarComercio(c.id)} title="Eliminar comercio">
+                    🗑️
+                  </Button>
+                </div>
               </li>
             ))}
             {comercios.length === 0 && <li className="py-3 text-center text-slate-400 text-sm">Sin comercios todavía</li>}
