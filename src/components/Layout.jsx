@@ -87,6 +87,16 @@ export default function Layout() {
                 ? '🎧 Atención al Cliente'
                 : '🧾 Cajero'}
             </span>
+            <a
+              href="/ayuda"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Ayuda (se abre en una pestaña nueva)"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-medium hover:bg-white/10"
+            >
+              <span className="grid place-items-center h-5 w-5 rounded-full bg-white/20 text-xs font-bold">?</span>
+              <span className="hidden sm:inline">Ayuda</span>
+            </a>
             <Button variant="ghost" className="text-white hover:bg-white/10" onClick={handleLogout}>
               Salir
             </Button>

@@ -12,6 +12,7 @@ import Usuarios from './pages/Usuarios'
 import Mails from './pages/Mails'
 import Cajero from './pages/Cajero'
 import Atencion from './pages/Atencion'
+import Ayuda from './pages/Ayuda'
 
 export default function App() {
   const { session, isAdmin, role, loading } = useAuth()
@@ -67,6 +68,17 @@ export default function App() {
         }
       >
         <Route path="/atencion" element={<Atencion />} />
+      </Route>
+
+      {/* Ayuda: disponible para cualquier usuario logueado */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/ayuda" element={<Ayuda />} />
       </Route>
 
       {/* Raíz: redirige según rol */}
