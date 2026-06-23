@@ -37,17 +37,17 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-indigo-700 text-white">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-6">
-            <span className="font-bold text-lg">🎁 Gift Cards</span>
-            <nav className="hidden sm:flex gap-1">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex flex-nowrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="font-bold text-lg whitespace-nowrap shrink-0">🎁 Gift Cards</span>
+            <nav className="hidden sm:flex gap-1 overflow-x-auto min-w-0">
               {links.map((l) => (
                 <NavLink
                   key={l.to}
                   to={l.to}
                   end={l.end}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded-lg text-sm font-medium ${
+                    `px-2.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 ${
                       isActive ? 'bg-white/20' : 'hover:bg-white/10'
                     }`
                   }
@@ -57,12 +57,12 @@ export default function Layout() {
               ))}
             </nav>
           </div>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden md:inline opacity-90">{profile?.email}</span>
+          <div className="flex items-center gap-2 text-sm shrink-0">
+            <span className="hidden lg:inline opacity-90 whitespace-nowrap truncate max-w-[180px]">{profile?.email}</span>
             <span
               className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
                 isAdmin
-                  ? 'bg-amber-300 text-amber-900'
+                  ? 'bg-white text-amber-700'
                   : role === 'tesoreria'
                   ? 'bg-violet-200 text-violet-800'
                   : role === 'atencion'
