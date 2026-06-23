@@ -4,6 +4,7 @@ import { QRCodeCanvas } from 'qrcode.react'
 import { supabase } from '../supabaseClient'
 import { Button, Input, Select, Card, Badge, money } from '../components/ui'
 import { composeCardDataURL } from '../lib/cardImage'
+import ClienteCombo from '../components/ClienteCombo'
 
 // Genera un código de 8 caracteres alfanuméricos (mayúsculas + dígitos)
 function generarCodigo() {
@@ -50,7 +51,7 @@ export default function GiftCards() {
   const [clientes, setClientes] = useState([])
   const [grupos, setGrupos] = useState([])
   const [comercios, setComercios] = useState([])
-  const [form, setForm] = useState({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: '' })
+  const [form, setForm] = useState({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: '', uso_parcial: true })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [qrCard, setQrCard] = useState(null)
@@ -59,7 +60,7 @@ export default function GiftCards() {
   const qrRef = useRef(null)
 
   // Generación masiva
-  const [masivo, setMasivo] = useState({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '', grupo_id: '', enviarEmails: false })
+  const [masivo, setMasivo] = useState({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '', grupo_id: '', enviarEmails: false, uso_parcial: true })
   const [masivoError, setMasivoError] = useState('')
   const [masivoMsg, setMasivoMsg] = useState('')
   const [masivoLoading, setMasivoLoading] = useState(false)
@@ -120,12 +121,13 @@ export default function GiftCards() {
           monto_max: monto,
           saldo: monto,
           fecha_vencimiento: form.fecha_vencimiento || null,
+          uso_parcial: form.uso_parcial,
         })
         .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni, email)')
         .single()
       if (!error) {
         setLoading(false)
-        setForm({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: '' })
+        setForm({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: '', uso_parcial: true })
         setMailMsg('')
         setQrCard(data)
         load()
@@ -185,6 +187,7 @@ export default function GiftCards() {
       monto_max: monto,
       saldo: monto,
       fecha_vencimiento: masivo.fecha_vencimiento || null,
+      uso_parcial: masivo.uso_parcial,
     }))
 
     const { error } = await supabase.from('giftcards').insert(filas)
@@ -221,7 +224,7 @@ export default function GiftCards() {
       )
     }
 
-    setMasivo({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '', grupo_id: '', enviarEmails: false })
+    setMasivo({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '', grupo_id: '', enviarEmails: false, uso_parcial: true })
     load()
   }
 
@@ -401,18 +404,12 @@ export default function GiftCards() {
               </option>
             ))}
           </Select>
-          <Select
+          <ClienteCombo
             label="Cliente (opcional)"
+            clientes={clientes}
             value={form.cliente_id}
-            onChange={(e) => setForm({ ...form, cliente_id: e.target.value })}
-          >
-            <option value="">— Sin asignar —</option>
-            {clientes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre} ({c.dni})
-              </option>
-            ))}
-          </Select>
+            onChange={(id) => setForm({ ...form, cliente_id: id })}
+          />
           <Input
             label="Monto máximo *"
             type="text"
@@ -427,6 +424,14 @@ export default function GiftCards() {
             value={form.fecha_vencimiento}
             onChange={(e) => setForm({ ...form, fecha_vencimiento: e.target.value })}
           />
+          <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
+            <input
+              type="checkbox"
+              checked={form.uso_parcial}
+              onChange={(e) => setForm({ ...form, uso_parcial: e.target.checked })}
+            />
+            Permitir uso parcial (si se desmarca, solo se puede usar el saldo completo de una vez)
+          </label>
           {error && <p className="text-sm text-red-600 sm:col-span-2 lg:col-span-4">{error}</p>}
           <Button type="submit" disabled={loading} className="w-full sm:col-span-2 lg:col-span-1">
             {loading ? 'Generando…' : 'Generar y crear QR'}
@@ -494,6 +499,14 @@ export default function GiftCards() {
             value={masivo.fecha_vencimiento}
             onChange={(e) => setMasivo({ ...masivo, fecha_vencimiento: e.target.value })}
           />
+          <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
+            <input
+              type="checkbox"
+              checked={masivo.uso_parcial}
+              onChange={(e) => setMasivo({ ...masivo, uso_parcial: e.target.checked })}
+            />
+            Permitir uso parcial (si se desmarca, solo se puede usar el saldo completo de una vez)
+          </label>
           {masivo.grupo_id && (
             <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
               <input
@@ -581,18 +594,16 @@ export default function GiftCards() {
                         {c.clientes?.nombre || '—'} 🔒
                       </span>
                     ) : (
-                      <select
-                        className="px-2 py-1 border border-amber-400 text-amber-700 rounded-lg bg-white text-sm"
-                        value=""
-                        onChange={(e) => asignarCliente(c.id, e.target.value)}
-                      >
-                        <option value="">— sin asignar —</option>
-                        {clientes.map((cl) => (
-                          <option key={cl.id} value={cl.id}>
-                            {cl.nombre} ({cl.dni})
-                          </option>
-                        ))}
-                      </select>
+                      <div className="min-w-[180px] text-left">
+                        <ClienteCombo
+                          clientes={clientes}
+                          value=""
+                          onChange={(id) => id && asignarCliente(c.id, id)}
+                          allowEmpty={false}
+                          placeholder="Asignar cliente…"
+                          inputClassName="border-amber-400 text-amber-700 text-sm py-1"
+                        />
+                      </div>
                     )}
                   </td>
                   <td data-label="Máx.">{money(c.monto_max)}</td>

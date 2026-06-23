@@ -4,6 +4,10 @@ import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Card, Badge, money } from '../components/ui'
 
+// Formato de monto: guarda solo dígitos y muestra "$ 1.234.567" mientras se escribe
+const soloDigitos = (s) => (s || '').replace(/\D/g, '')
+const formatPesos = (d) => (d ? '$ ' + Number(d).toLocaleString('es-AR') : '')
+
 // Fecha de hoy en formato YYYY-MM-DD (hora local)
 function hoyLocal() {
   const d = new Date()
@@ -23,6 +27,7 @@ export default function Cajero() {
   const [misUsos, setMisUsos] = useState([]) // historial de usos de este cajero
   const [toast, setToast] = useState('') // aviso flotante de éxito
   const [dia, setDia] = useState(hoyLocal) // día seleccionado para la tabla
+  const [selUsos, setSelUsos] = useState(() => new Set()) // filas seleccionadas para exportar
   const scannerRef = useRef(null)
 
   async function cargarMisUsos(diaStr = dia) {
@@ -38,6 +43,18 @@ export default function Cajero() {
       .lt('created_at', fin.toISOString())
       .order('created_at', { ascending: false })
     setMisUsos(data || [])
+    setSelUsos(new Set())
+  }
+
+  function toggleUso(id) {
+    setSelUsos((prev) => {
+      const n = new Set(prev)
+      n.has(id) ? n.delete(id) : n.add(id)
+      return n
+    })
+  }
+  function toggleTodos() {
+    setSelUsos((prev) => (prev.size === misUsos.length ? new Set() : new Set(misUsos.map((t) => t.id))))
   }
 
   useEffect(() => {
@@ -63,6 +80,8 @@ export default function Cajero() {
     if (error) return setError(error.message)
     if (!data) return setError('No se encontró ninguna gift card con ese código.')
     setCard(data)
+    // Si es de uso total, precarga el saldo completo
+    if (data.uso_parcial === false) setMonto(String(Math.round(Number(data.saldo))))
   }
 
   async function confirmarUso() {
@@ -103,28 +122,79 @@ export default function Cajero() {
     setTimeout(() => setToast(''), 4000)
   }
 
-  // Exporta la tabla del día a un archivo que abre Excel (.xls vía HTML)
-  function exportarExcel() {
-    const filas = misUsos
+  const esc = (s) =>
+    String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+  // Genera el informe de rendición de caja (PDF vía diálogo de impresión) con las filas seleccionadas
+  function exportarPDF() {
+    const filas = misUsos.filter((t) => selUsos.has(t.id))
+    if (filas.length === 0) return
+    const total = filas.reduce((a, t) => a + Number(t.monto), 0)
+    const ahora = new Date()
+    const fechaHora = ahora.toLocaleString('es-AR', { hour12: false })
+    const pad = (n) => String(n).padStart(2, '0')
+    const numero = `R-${dia.replaceAll('-', '')}-${pad(ahora.getHours())}${pad(ahora.getMinutes())}${pad(ahora.getSeconds())}`
+
+    const filasHtml = filas
       .map(
         (t) => `<tr>
-          <td>${new Date(t.created_at).toLocaleString('es-AR')}</td>
-          <td>${t.giftcards?.codigo || ''}</td>
-          <td>${t.giftcards?.clientes?.nombre || ''}</td>
-          <td>${Number(t.monto)}</td>
+          <td>${new Date(t.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })}</td>
+          <td class="mono">${esc(t.giftcards?.codigo)}</td>
+          <td>${esc(t.giftcards?.clientes?.nombre || '—')}</td>
+          <td>${esc(t.giftcards?.empresas?.nombre || '—')}</td>
+          <td class="r">${money(t.monto)}</td>
         </tr>`
       )
       .join('')
-    const html = `<table border="1">
-      <thead><tr><th>Fecha</th><th>Codigo</th><th>Cliente</th><th>Monto</th></tr></thead>
-      <tbody>${filas}</tbody>
-    </table>`
-    const blob = new Blob(['﻿' + html], { type: 'application/vnd.ms-excel' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `usos-${dia}.xls`
-    link.click()
-    URL.revokeObjectURL(link.href)
+
+    const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
+      <title>Rendición ${esc(numero)}</title>
+      <style>
+        * { font-family: Arial, sans-serif; color:#1e293b; }
+        body { margin: 32px; }
+        h1 { font-size: 20px; margin: 0 0 4px; color:#3730a3; }
+        .sub { color:#64748b; font-size: 12px; margin: 0 0 16px; }
+        .meta { font-size: 13px; margin: 12px 0 16px; line-height: 1.6; }
+        .meta b { display:inline-block; min-width: 150px; color:#475569; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; }
+        th { background:#e0e7ff; }
+        td.r, th.r { text-align: right; }
+        td.mono { font-family: monospace; font-weight: bold; }
+        tfoot td { font-weight: bold; background:#f1f5f9; }
+        .firma { margin-top: 64px; display:flex; justify-content: space-between; gap: 40px; }
+        .firma div { flex:1; text-align:center; border-top:1px solid #334155; padding-top:6px; font-size:12px; color:#475569; }
+        @media print { body { margin: 16mm; } }
+      </style></head><body>
+      <h1>🎁 Rendición de caja</h1>
+      <p class="sub">Gestión de Gift Cards — Departamento de Sistemas · HERGO | MENOR COSTE</p>
+      <div class="meta">
+        <div><b>N° de rendición:</b> ${esc(numero)}</div>
+        <div><b>Cajero:</b> ${esc(user?.email || '')}</div>
+        <div><b>Comercio:</b> ${esc(comercioCajero || 'Sin restricción')}</div>
+        <div><b>Día de los usos:</b> ${esc(new Date(dia + 'T00:00:00').toLocaleDateString('es-AR'))}</div>
+        <div><b>Fecha y hora de emisión:</b> ${esc(fechaHora)}</div>
+        <div><b>Cantidad de gift cards:</b> ${filas.length}</div>
+      </div>
+      <table>
+        <thead><tr><th>Hora</th><th>Código</th><th>Cliente</th><th>Empresa</th><th class="r">Monto</th></tr></thead>
+        <tbody>${filasHtml}</tbody>
+        <tfoot><tr><td colspan="4" class="r">TOTAL</td><td class="r">${money(total)}</td></tr></tfoot>
+      </table>
+      <div class="firma">
+        <div>Firma del cajero</div>
+        <div>Firma de supervisión / tesorería</div>
+      </div>
+      <script>window.onload = function(){ setTimeout(function(){ window.print() }, 300) }<\/script>
+      </body></html>`
+
+    const w = window.open('', '_blank')
+    if (!w) {
+      alert('El navegador bloqueó la ventana emergente. Permití las ventanas emergentes para generar el PDF.')
+      return
+    }
+    w.document.write(html)
+    w.document.close()
   }
 
   // ---------- Escáner QR ----------
@@ -248,18 +318,24 @@ export default function Cajero() {
             <div className="space-y-3">
               <Input
                 label="Monto a usar"
-                type="number"
-                min="0"
-                step="0.01"
-                max={card.saldo}
-                value={monto}
-                onChange={(e) => setMonto(e.target.value)}
+                type="text"
+                inputMode="numeric"
+                value={formatPesos(monto)}
+                onChange={(e) => setMonto(soloDigitos(e.target.value))}
                 placeholder={`Hasta ${money(card.saldo)}`}
+                disabled={card.uso_parcial === false}
               />
+              {card.uso_parcial === false && (
+                <p className="text-xs text-amber-600">
+                  Esta gift card es de <strong>uso total</strong>: se descuenta el saldo completo en un solo uso.
+                </p>
+              )}
               <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => setMonto(String(card.saldo))}>
-                  Usar todo
-                </Button>
+                {card.uso_parcial !== false && (
+                  <Button variant="secondary" onClick={() => setMonto(String(Math.round(Number(card.saldo))))}>
+                    Usar todo
+                  </Button>
+                )}
                 <Button onClick={confirmarUso} disabled={loading} className="flex-1">
                   {loading ? 'Procesando…' : 'Confirmar uso'}
                 </Button>
@@ -304,8 +380,8 @@ export default function Cajero() {
               onChange={(e) => setDia(e.target.value || hoyLocal())}
               className="px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm"
             />
-            <Button variant="secondary" onClick={exportarExcel} disabled={misUsos.length === 0}>
-              ⬇️ Exportar a Excel
+            <Button onClick={exportarPDF} disabled={selUsos.size === 0}>
+              🧾 Rendición PDF ({selUsos.size})
             </Button>
           </div>
         </div>
@@ -313,7 +389,15 @@ export default function Cajero() {
           <table className="w-full text-xs table-fixed text-center">
             <thead>
               <tr className="text-slate-500 border-b">
-                <th className="py-2">Hora</th>
+                <th className="py-2 w-8">
+                  <input
+                    type="checkbox"
+                    checked={misUsos.length > 0 && selUsos.size === misUsos.length}
+                    onChange={toggleTodos}
+                    title="Seleccionar todas"
+                  />
+                </th>
+                <th>Hora</th>
                 <th>Código</th>
                 <th>Cliente</th>
                 <th>Monto</th>
@@ -321,7 +405,10 @@ export default function Cajero() {
             </thead>
             <tbody>
               {misUsos.map((t) => (
-                <tr key={t.id} className="border-b last:border-0">
+                <tr key={t.id} className={`border-b last:border-0 ${selUsos.has(t.id) ? 'bg-indigo-50' : ''}`}>
+                  <td>
+                    <input type="checkbox" checked={selUsos.has(t.id)} onChange={() => toggleUso(t.id)} />
+                  </td>
                   <td className="py-2">
                     {new Date(t.created_at).toLocaleTimeString('es-AR', {
                       hour: '2-digit',
@@ -336,7 +423,7 @@ export default function Cajero() {
               ))}
               {misUsos.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="py-6 text-center text-slate-400">
+                  <td colSpan="5" className="py-6 text-center text-slate-400">
                     Todavía no registraste usos
                   </td>
                 </tr>

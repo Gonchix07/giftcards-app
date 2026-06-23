@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { Button, Input, Select, Card } from '../components/ui'
 
-const empty = { nombre: '', dni: '', email: '', codigo_cliente: '', grupo_id: '' }
+const empty = { nombre: '', dni: '', email: '', telefono: '', codigo_cliente: '', grupo_id: '' }
+
+// Máscara de teléfono: 223-5937766 (código + número)
+function formatTel(v) {
+  const d = (v || '').replace(/\D/g, '').slice(0, 10)
+  return d.length <= 3 ? d : d.slice(0, 3) + '-' + d.slice(3)
+}
 
 export default function Clientes() {
   const [clientes, setClientes] = useState([])
@@ -36,6 +42,7 @@ export default function Clientes() {
       nombre: c.nombre,
       dni: c.dni,
       email: c.email || '',
+      telefono: c.telefono || '',
       codigo_cliente: c.codigo_cliente || '',
       grupo_id: c.grupo_id || '',
     })
@@ -49,7 +56,11 @@ export default function Clientes() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    if (!form.email.trim()) {
+      setError('El email es obligatorio.')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       setError('Ingresá una dirección de email válida.')
       return
     }
@@ -58,7 +69,12 @@ export default function Clientes() {
       return
     }
     setLoading(true)
-    const payload = { ...form, grupo_id: form.grupo_id || null, codigo_cliente: form.codigo_cliente || null }
+    const payload = {
+      ...form,
+      grupo_id: form.grupo_id || null,
+      codigo_cliente: form.codigo_cliente || null,
+      telefono: form.telefono || null,
+    }
     const res = editId
       ? await supabase.from('clientes').update(payload).eq('id', editId)
       : await supabase.from('clientes').insert(payload)
@@ -130,10 +146,19 @@ export default function Clientes() {
               required
             />
             <Input
-              label="Email"
+              label="Email *"
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
+            />
+            <Input
+              label="Teléfono (opcional)"
+              value={form.telefono}
+              onChange={(e) => setForm({ ...form, telefono: formatTel(e.target.value) })}
+              placeholder="223-5937766"
+              inputMode="numeric"
+              maxLength={11}
             />
             <Input
               label="Código de cliente (opcional, 5 caracteres)"
@@ -216,6 +241,7 @@ export default function Clientes() {
                 <th>DNI</th>
                 <th>Código</th>
                 <th>Email</th>
+                <th>Teléfono</th>
                 <th>Grupo</th>
                 <th></th>
               </tr>
@@ -227,6 +253,7 @@ export default function Clientes() {
                   <td data-label="DNI">{c.dni}</td>
                   <td data-label="Código">{c.codigo_cliente || '—'}</td>
                   <td data-label="Email">{c.email || '—'}</td>
+                  <td data-label="Teléfono">{c.telefono || '—'}</td>
                   <td data-label="Grupo">{c.grupos?.nombre || '—'}</td>
                   <td className="text-right whitespace-nowrap" data-label="Acciones">
                     <Button variant="ghost" onClick={() => startEdit(c)}>✏️</Button>
@@ -236,7 +263,7 @@ export default function Clientes() {
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="py-6 text-center text-slate-400">
+                  <td colSpan="7" className="py-6 text-center text-slate-400">
                     Sin resultados
                   </td>
                 </tr>
