@@ -141,10 +141,10 @@ export default function Empresas() {
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
+    <div className="grid lg:grid-cols-3 gap-6 text-sm">
       <div className="lg:col-span-1 space-y-6">
         <Card className="h-fit">
-          <h2 className="font-bold text-lg mb-4">{editId ? 'Editar empresa' : 'Nueva empresa'}</h2>
+          <h2 className="font-bold text-base mb-4">{editId ? 'Editar empresa' : 'Nueva empresa'}</h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <Input
               label="Nombre *"
@@ -196,7 +196,7 @@ export default function Empresas() {
 
         {/* Gestión de comercios */}
         <Card className="h-fit">
-          <h2 className="font-bold text-lg mb-1">Comercios ({comercios.length})</h2>
+          <h2 className="font-bold text-base mb-1">Comercios ({comercios.length})</h2>
           <p className="text-sm text-slate-500 mb-4">El logo es propio del comercio donde se usa la gift card.</p>
           <form onSubmit={crearComercio} className="space-y-3">
             <Input
@@ -295,9 +295,9 @@ export default function Empresas() {
       </div>
 
       <Card className="lg:col-span-2 min-w-0">
-        <h2 className="font-bold text-lg mb-4">Empresas ({empresas.length})</h2>
+        <h2 className="font-bold text-base mb-4">Empresas ({empresas.length})</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm responsive-table">
+          <table className="w-full text-xs responsive-table">
             <thead>
               <tr className="text-left text-slate-500 border-b">
                 <th className="py-2">Nombre</th>

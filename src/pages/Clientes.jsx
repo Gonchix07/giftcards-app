@@ -112,10 +112,10 @@ export default function Clientes() {
   )
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
+    <div className="grid lg:grid-cols-3 gap-6 text-sm">
       <div className="lg:col-span-1 space-y-6">
         <Card className="h-fit">
-          <h2 className="font-bold text-lg mb-4">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
+          <h2 className="font-bold text-base mb-4">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <Input
               label="Nombre *"
@@ -171,7 +171,7 @@ export default function Clientes() {
 
         {/* Gestión de grupos */}
         <Card className="h-fit">
-          <h2 className="font-bold text-lg mb-4">Grupos ({grupos.length})</h2>
+          <h2 className="font-bold text-base mb-4">Grupos ({grupos.length})</h2>
           <form onSubmit={crearGrupo} className="flex gap-2 items-end">
             <Input
               label="Nuevo grupo"
@@ -200,7 +200,7 @@ export default function Clientes() {
 
       <Card className="lg:col-span-2 min-w-0">
         <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
-          <h2 className="font-bold text-lg">Clientes ({clientes.length})</h2>
+          <h2 className="font-bold text-base">Clientes ({clientes.length})</h2>
           <Input
             placeholder="Buscar por nombre o DNI…"
             value={q}
@@ -209,7 +209,7 @@ export default function Clientes() {
           />
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm responsive-table">
+          <table className="w-full text-xs responsive-table">
             <thead>
               <tr className="text-left text-slate-500 border-b">
                 <th className="py-2">Nombre</th>

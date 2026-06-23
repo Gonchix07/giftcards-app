@@ -4,19 +4,23 @@ import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Select, Card, Badge } from '../components/ui'
 
 const empty = { email: '', password: '', role: 'cajero' }
-const COMERCIOS = ['HERGO Mayorista', 'Tiendas Menor Coste']
 
 export default function Usuarios() {
   const { user } = useAuth()
   const [usuarios, setUsuarios] = useState([])
+  const [comercios, setComercios] = useState([])
   const [form, setForm] = useState(empty)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function load() {
-    const { data } = await supabase.from('profiles').select('*').order('email')
-    setUsuarios(data || [])
+    const [u, c] = await Promise.all([
+      supabase.from('profiles').select('*').order('email'),
+      supabase.from('comercios').select('nombre').order('nombre'),
+    ])
+    setUsuarios(u.data || [])
+    setComercios(c.data || [])
   }
   useEffect(() => {
     load()
@@ -164,9 +168,9 @@ export default function Usuarios() {
                       onChange={(e) => cambiarComercio(u.id, e.target.value)}
                     >
                       <option value="">— Sin restricción —</option>
-                      {COMERCIOS.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
+                      {comercios.map((c) => (
+                        <option key={c.nombre} value={c.nombre}>
+                          {c.nombre}
                         </option>
                       ))}
                     </select>
