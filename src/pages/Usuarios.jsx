@@ -98,9 +98,9 @@ export default function Usuarios() {
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
+    <div className="grid lg:grid-cols-3 gap-6 text-sm">
       <Card className="lg:col-span-1 h-fit">
-        <h2 className="font-bold text-lg mb-4">Nuevo usuario</h2>
+        <h2 className="font-bold text-base mb-4">Nuevo usuario</h2>
         <form onSubmit={crearUsuario} className="space-y-3">
           <Input
             label="Email *"
@@ -131,9 +131,9 @@ export default function Usuarios() {
       </Card>
 
       <Card className="lg:col-span-2 min-w-0">
-        <h2 className="font-bold text-lg mb-4">Usuarios ({usuarios.length})</h2>
+        <h2 className="font-bold text-base mb-4">Usuarios ({usuarios.length})</h2>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm responsive-table">
+          <table className="w-full text-xs responsive-table">
             <thead>
               <tr className="text-left text-slate-500 border-b">
                 <th className="py-2">Email</th>

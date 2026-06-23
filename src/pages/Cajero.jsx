@@ -172,10 +172,10 @@ export default function Cajero() {
     card && card.estado === 'activa' && Number(card.saldo) > 0 && !estaVencida && !sinCliente && !otroComercio
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="max-w-xl mx-auto space-y-6 text-sm">
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <h2 className="font-bold text-lg">Cobrar con Gift Card</h2>
+          <h2 className="font-bold text-base">Cobrar con Gift Card</h2>
           {comercioCajero && (
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-100 text-indigo-700">
               Comercio: {comercioCajero}
@@ -294,7 +294,7 @@ export default function Cajero() {
       {/* Listado visual de las gift cards usadas por este cajero */}
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="font-bold text-lg">Mis usos registrados ({misUsos.length})</h2>
+          <h2 className="font-bold text-base">Mis usos registrados ({misUsos.length})</h2>
           <div className="flex flex-wrap items-center gap-2">
             <label className="text-sm text-slate-500">Día:</label>
             <input
@@ -310,7 +310,7 @@ export default function Cajero() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm table-fixed text-center">
+          <table className="w-full text-xs table-fixed text-center">
             <thead>
               <tr className="text-slate-500 border-b">
                 <th className="py-2">Hora</th>

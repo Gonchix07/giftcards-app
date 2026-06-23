@@ -111,7 +111,7 @@ export default function Reportes() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Reportes</h1>
         <div className="flex gap-2">
@@ -162,7 +162,7 @@ export default function Reportes() {
             </Button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm responsive-table">
+            <table className="w-full text-xs responsive-table">
               <thead>
                 <tr className="text-center text-slate-500 border-b">
                   <th className="py-2">Código</th>
@@ -246,7 +246,7 @@ export default function Reportes() {
             </Button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm responsive-table">
+            <table className="w-full text-xs responsive-table">
               <thead>
                 <tr className="text-center text-slate-500 border-b">
                   <th className="py-2">Fecha</th>
@@ -314,7 +314,7 @@ export default function Reportes() {
             </Button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm responsive-table">
+            <table className="w-full text-xs responsive-table">
               <thead>
                 <tr className="text-center text-slate-500 border-b">
                   <th className="py-2">Fecha y hora</th>

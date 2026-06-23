@@ -45,9 +45,9 @@ export default function Mails() {
   }
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6">
+    <div className="grid lg:grid-cols-2 gap-6 text-sm">
       <Card className="h-fit">
-        <h2 className="font-bold text-lg mb-1">Plantilla de email</h2>
+        <h2 className="font-bold text-base mb-1">Plantilla de email</h2>
         <p className="text-sm text-slate-500 mb-2">
           Modelo genérico que se envía a los clientes. Podés usar las variables{' '}
           <code className="text-xs bg-slate-100 px-1 rounded">{'{nombre}'}</code>{' '}
@@ -104,7 +104,7 @@ export default function Mails() {
 
       {/* Vista previa */}
       <Card className="h-fit">
-        <h2 className="font-bold text-lg mb-4">Vista previa</h2>
+        <h2 className="font-bold text-base mb-4">Vista previa</h2>
         <p className="text-xs text-slate-500 mb-2">
           Asunto: <strong>{subst(form.asunto, EJEMPLO)}</strong>
         </p>

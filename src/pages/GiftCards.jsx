@@ -385,9 +385,9 @@ export default function GiftCards() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-sm">
       <Card>
-        <h2 className="font-bold text-lg mb-4">Emitir Gift Card</h2>
+        <h2 className="font-bold text-base mb-4">Emitir Gift Card</h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <Select
             label="Empresa *"
@@ -435,7 +435,7 @@ export default function GiftCards() {
       </Card>
 
       <Card>
-        <h2 className="font-bold text-lg mb-1">Generar de forma masiva</h2>
+        <h2 className="font-bold text-base mb-1">Generar de forma masiva</h2>
         <p className="text-sm text-slate-500 mb-4">
           Crea varias gift cards de una empresa con el mismo monto y vencimiento. Sin grupo quedan{' '}
           <strong>sin cliente</strong> (asignalos desde la tabla). Si elegís un <strong>grupo</strong>, se genera una
@@ -514,7 +514,7 @@ export default function GiftCards() {
 
       <Card>
         <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-          <h2 className="font-bold text-lg">Gift Cards ({cardsFiltradas.length})</h2>
+          <h2 className="font-bold text-base">Gift Cards ({cardsFiltradas.length})</h2>
           <div className="flex items-center gap-3 flex-wrap">
             <select
               className="px-3 py-2 border border-slate-300 rounded-lg bg-white text-sm"
@@ -536,7 +536,7 @@ export default function GiftCards() {
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm responsive-table">
+          <table className="w-full text-xs responsive-table">
             <thead>
               <tr className="text-center text-slate-500 border-b">
                 <th className="py-2 w-8">

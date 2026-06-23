@@ -137,9 +137,9 @@ export default function Atencion() {
   const cardsFiltradas = filtroEstado === 'todas' ? cards : cards.filter((c) => c.estado === filtroEstado)
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6 text-sm">
       <Card>
-        <h2 className="font-bold text-lg mb-4">Atención al cliente</h2>
+        <h2 className="font-bold text-base mb-4">Atención al cliente</h2>
         <form onSubmit={buscar} className="flex flex-wrap gap-2 items-end">
           <Input
             label="Buscar cliente por nombre o DNI"
@@ -175,7 +175,7 @@ export default function Atencion() {
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
-              <h3 className="font-bold text-lg">{clienteSel.nombre}</h3>
+              <h3 className="font-bold text-base">{clienteSel.nombre}</h3>
               <p className="text-sm text-slate-500">
                 DNI {clienteSel.dni}
                 {clienteSel.email ? ` · ${clienteSel.email}` : ' · sin email'}
@@ -195,7 +195,7 @@ export default function Atencion() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-sm responsive-table">
+            <table className="w-full text-xs responsive-table">
               <thead>
                 <tr className="text-center text-slate-500 border-b">
                   <th className="py-2">Código</th>

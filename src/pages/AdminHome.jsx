@@ -70,7 +70,7 @@ export default function AdminHome() {
   }, [dias])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-sm">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <div className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export default function AdminHome() {
 
           {/* Desglose por empresa */}
           <div>
-            <h2 className="font-bold text-lg mb-3">Por empresa</h2>
+            <h2 className="font-bold text-base mb-3">Por empresa</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {empresas.map((e) => (
                 <Link key={e.id} to={`/admin/giftcards?empresa=${e.id}`}>
