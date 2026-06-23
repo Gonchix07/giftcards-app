@@ -3,13 +3,16 @@ import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Select, Card, Badge } from '../components/ui'
 
-const empty = { email: '', password: '', role: 'cajero' }
+const empty = { email: '', password: '', role: 'cajero', comercio: '' }
+
+const rolLabel = { admin: 'Administrador', cajero: 'Cajero', atencion: 'Atención Cliente', tesoreria: 'Tesorería' }
 
 export default function Usuarios() {
   const { user } = useAuth()
   const [usuarios, setUsuarios] = useState([])
   const [comercios, setComercios] = useState([])
   const [form, setForm] = useState(empty)
+  const [editId, setEditId] = useState(null)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
   const [loading, setLoading] = useState(false)
@@ -26,7 +29,6 @@ export default function Usuarios() {
     load()
   }, [])
 
-  // Token del admin para autorizar las llamadas a la función serverless
   async function authHeader() {
     const {
       data: { session },
@@ -34,25 +36,37 @@ export default function Usuarios() {
     return { Authorization: `Bearer ${session?.access_token || ''}`, 'Content-Type': 'application/json' }
   }
 
-  async function crearUsuario(e) {
+  function startEdit(u) {
+    setEditId(u.id)
+    setError('')
+    setMsg('')
+    setForm({ email: u.email || '', password: '', role: u.role, comercio: u.comercio || '' })
+  }
+  function reset() {
+    setEditId(null)
+    setError('')
+    setForm(empty)
+  }
+
+  async function guardar(e) {
     e.preventDefault()
     setError('')
     setMsg('')
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setError('Ingresá un email válido.')
-    if (form.password.length < 6) return setError('La contraseña debe tener al menos 6 caracteres.')
+    if (!editId && form.password.length < 6) return setError('La contraseña debe tener al menos 6 caracteres.')
+    if (editId && form.password && form.password.length < 6)
+      return setError('La nueva contraseña debe tener al menos 6 caracteres.')
     setLoading(true)
     try {
-      const resp = await fetch('/api/admin-users', {
-        method: 'POST',
-        headers: await authHeader(),
-        body: JSON.stringify(form),
-      })
+      const method = editId ? 'PATCH' : 'POST'
+      const body = editId ? { userId: editId, ...form } : { ...form }
+      const resp = await fetch('/api/admin-users', { method, headers: await authHeader(), body: JSON.stringify(body) })
       const json = await resp.json().catch(() => ({}))
       if (!resp.ok) {
-        setError(json.error || 'No se pudo crear el usuario.')
+        setError(json.error || 'No se pudo guardar.')
       } else {
-        setMsg(`✅ Usuario ${form.email} creado como ${form.role}.`)
-        setForm(empty)
+        setMsg(editId ? '✅ Usuario actualizado.' : `✅ Usuario ${form.email} creado.`)
+        reset()
         load()
       }
     } catch (e) {
@@ -60,22 +74,6 @@ export default function Usuarios() {
     } finally {
       setLoading(false)
     }
-  }
-
-  async function cambiarRol(id, role) {
-    setError('')
-    setMsg('')
-    const { error } = await supabase.from('profiles').update({ role }).eq('id', id)
-    if (error) setError(error.message)
-    else load()
-  }
-
-  async function cambiarComercio(id, comercio) {
-    setError('')
-    setMsg('')
-    const { error } = await supabase.from('profiles').update({ comercio: comercio || null }).eq('id', id)
-    if (error) setError(error.message)
-    else load()
   }
 
   async function eliminarUsuario(u) {
@@ -100,8 +98,8 @@ export default function Usuarios() {
   return (
     <div className="grid lg:grid-cols-3 gap-6 text-sm">
       <Card className="lg:col-span-1 h-fit">
-        <h2 className="font-bold text-base mb-4">Nuevo usuario</h2>
-        <form onSubmit={crearUsuario} className="space-y-3">
+        <h2 className="font-bold text-base mb-4">{editId ? 'Editar usuario' : 'Nuevo usuario'}</h2>
+        <form onSubmit={guardar} className="space-y-3">
           <Input
             label="Email *"
             type="email"
@@ -110,11 +108,11 @@ export default function Usuarios() {
             required
           />
           <Input
-            label="Contraseña * (mín. 6)"
+            label={editId ? 'Contraseña (dejar vacío para no cambiarla)' : 'Contraseña * (mín. 6)'}
             type="text"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
-            required
+            placeholder={editId ? '••••••' : ''}
           />
           <Select label="Rol *" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
             <option value="cajero">Cajero</option>
@@ -122,11 +120,31 @@ export default function Usuarios() {
             <option value="tesoreria">Tesorería</option>
             <option value="admin">Administrador</option>
           </Select>
+          <Select
+            label="Comercio (solo cajero)"
+            value={form.comercio}
+            onChange={(e) => setForm({ ...form, comercio: e.target.value })}
+            disabled={form.role !== 'cajero'}
+          >
+            <option value="">— Sin restricción —</option>
+            {comercios.map((c) => (
+              <option key={c.nombre} value={c.nombre}>
+                {c.nombre}
+              </option>
+            ))}
+          </Select>
           {error && <p className="text-sm text-red-600">{error}</p>}
           {msg && <p className="text-sm text-green-700">{msg}</p>}
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? 'Creando…' : 'Crear usuario'}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Guardando…' : editId ? 'Guardar' : 'Crear usuario'}
+            </Button>
+            {editId && (
+              <Button type="button" variant="secondary" onClick={reset}>
+                Cancelar
+              </Button>
+            )}
+          </div>
         </form>
       </Card>
 
@@ -148,34 +166,12 @@ export default function Usuarios() {
                   <td className="py-2 font-medium" data-label="Email">
                     {u.email} {u.id === user?.id && <Badge color="slate">vos</Badge>}
                   </td>
-                  <td data-label="Rol">
-                    <select
-                      className="px-2 py-1 border border-slate-300 rounded-lg bg-white text-sm"
-                      value={u.role}
-                      onChange={(e) => cambiarRol(u.id, e.target.value)}
-                    >
-                      <option value="cajero">Cajero</option>
-                      <option value="atencion">Atención Cliente</option>
-                      <option value="tesoreria">Tesorería</option>
-                      <option value="admin">Administrador</option>
-                    </select>
-                  </td>
-                  <td data-label="Comercio (cajero)">
-                    <select
-                      className="px-2 py-1 border border-slate-300 rounded-lg bg-white text-sm disabled:opacity-50"
-                      value={u.comercio || ''}
-                      disabled={u.role !== 'cajero'}
-                      onChange={(e) => cambiarComercio(u.id, e.target.value)}
-                    >
-                      <option value="">— Sin restricción —</option>
-                      {comercios.map((c) => (
-                        <option key={c.nombre} value={c.nombre}>
-                          {c.nombre}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
+                  <td data-label="Rol">{rolLabel[u.role] || u.role}</td>
+                  <td data-label="Comercio (cajero)">{u.role === 'cajero' ? u.comercio || '— Sin restricción —' : '—'}</td>
                   <td className="text-right whitespace-nowrap" data-label="Acciones">
+                    <Button variant="ghost" onClick={() => startEdit(u)} title="Editar usuario">
+                      ✏️
+                    </Button>
                     <Button variant="ghost" onClick={() => eliminarUsuario(u)} title="Eliminar usuario">
                       🗑️
                     </Button>

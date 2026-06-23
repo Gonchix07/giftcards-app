@@ -37,11 +37,13 @@ export default async function handler(req, res) {
   const { admin, callerId, callerEmail } = ctx
 
   try {
+    const ROLES = ['admin', 'atencion', 'tesoreria', 'cajero']
+
     if (req.method === 'POST') {
-      const { email, password, role } = req.body || {}
+      const { email, password, role, comercio } = req.body || {}
       if (!email || !password) return res.status(400).json({ error: 'Faltan email o contraseña.' })
       if (String(password).length < 6) return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' })
-      const rol = ['admin', 'atencion', 'tesoreria', 'cajero'].includes(role) ? role : 'cajero'
+      const rol = ROLES.includes(role) ? role : 'cajero'
 
       const { data, error } = await admin.auth.admin.createUser({
         email,
@@ -51,8 +53,9 @@ export default async function handler(req, res) {
       })
       if (error) return res.status(400).json({ error: error.message })
 
-      // El rol lo fija el trigger handle_new_user desde el metadata.
-      // Auditoría: alta de usuario
+      // El rol lo fija el trigger handle_new_user; seteamos el comercio si vino (solo aplica a cajeros)
+      await admin.from('profiles').update({ comercio: rol === 'cajero' ? comercio || null : null }).eq('id', data.user.id)
+
       await admin.from('auditoria').insert({
         usuario_email: callerEmail,
         usuario_rol: 'admin',
@@ -60,6 +63,38 @@ export default async function handler(req, res) {
         detalle: `Usuario ${email} creado con rol ${rol}`,
       })
       return res.status(200).json({ ok: true, id: data.user.id })
+    }
+
+    if (req.method === 'PATCH') {
+      const { userId, email, password, role, comercio } = req.body || {}
+      if (!userId) return res.status(400).json({ error: 'Falta userId.' })
+      if (password && String(password).length < 6)
+        return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres.' })
+
+      // Actualiza email/contraseña en Auth si vinieron
+      const authUpd = {}
+      if (email) authUpd.email = email
+      if (password) authUpd.password = password
+      if (Object.keys(authUpd).length) {
+        const { error } = await admin.auth.admin.updateUserById(userId, authUpd)
+        if (error) return res.status(400).json({ error: error.message })
+      }
+
+      // Actualiza perfil (rol, comercio y email)
+      const rol = ROLES.includes(role) ? role : undefined
+      const prof = { comercio: rol === 'cajero' ? comercio || null : null }
+      if (rol) prof.role = rol
+      if (email) prof.email = email
+      const { error: pErr } = await admin.from('profiles').update(prof).eq('id', userId)
+      if (pErr) return res.status(400).json({ error: pErr.message })
+
+      await admin.from('auditoria').insert({
+        usuario_email: callerEmail,
+        usuario_rol: 'admin',
+        accion: 'usuario_modificado',
+        detalle: `Usuario ${email || userId} modificado${password ? ' (incluye contraseña)' : ''}`,
+      })
+      return res.status(200).json({ ok: true })
     }
 
     if (req.method === 'DELETE') {
