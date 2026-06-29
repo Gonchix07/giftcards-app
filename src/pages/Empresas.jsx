@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Select, Card, Badge } from '../components/ui'
 
 // Máscara de CUIT: transforma lo escrito en XX-XXXXXXXX-X
@@ -17,12 +18,23 @@ function formatCuit(value) {
 const empty = { nombre: '', cuit: '', comercio: '', activo: true }
 
 export default function Empresas() {
+  const { profile } = useAuth()
   const [empresas, setEmpresas] = useState([])
   const [comercios, setComercios] = useState([])
   const [form, setForm] = useState(empty)
   const [editId, setEditId] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  function auditar(accion, empresa, detalle) {
+    supabase.from('auditoria').insert({
+      usuario_email: profile?.email,
+      usuario_rol: profile?.role,
+      accion,
+      empresa,
+      detalle,
+    })
+  }
 
   // Alta de comercios
   const [comForm, setComForm] = useState({ nombre: '', logo_url: '', color: '#1e3a8a', template_url: '', qr_posicion: 'izquierda' })
@@ -68,15 +80,26 @@ export default function Empresas() {
       setError(res.error.message)
       return
     }
+    auditar(
+      editId ? 'empresa_modificada' : 'empresa_creada',
+      form.nombre,
+      editId
+        ? `Empresa "${form.nombre}" modificada (CUIT: ${form.cuit || '—'}, comercio: ${form.comercio || '—'})`
+        : `Empresa "${form.nombre}" creada (CUIT: ${form.cuit || '—'}, comercio: ${form.comercio || '—'})`,
+    )
     reset()
     load()
   }
 
   async function remove(id) {
     if (!confirm('¿Eliminar esta empresa? (no se puede si tiene gift cards asociadas)')) return
+    const emp = empresas.find((e) => e.id === id)
     const { error } = await supabase.from('empresas').delete().eq('id', id)
     if (error) alert(error.message)
-    else load()
+    else {
+      auditar('empresa_eliminada', emp?.nombre, `Empresa "${emp?.nombre}" eliminada`)
+      load()
+    }
   }
 
   // ---------- Comercios ----------
@@ -158,6 +181,13 @@ export default function Empresas() {
       await supabase.from('empresas').update({ comercio: nuevoNombre }).eq('comercio', nombreAnterior)
       await supabase.from('profiles').update({ comercio: nuevoNombre }).eq('comercio', nombreAnterior)
     }
+    auditar(
+      comEditId ? 'comercio_modificado' : 'comercio_creado',
+      nuevoNombre,
+      comEditId
+        ? `Comercio "${nuevoNombre}" modificado${nombreAnterior && nombreAnterior !== nuevoNombre ? ` (antes: "${nombreAnterior}")` : ''}`
+        : `Comercio "${nuevoNombre}" creado`,
+    )
     setComLoading(false)
     resetComercio()
     load()
@@ -165,9 +195,13 @@ export default function Empresas() {
 
   async function eliminarComercio(id) {
     if (!confirm('¿Eliminar este comercio?')) return
+    const com = comercios.find((c) => c.id === id)
     const { error } = await supabase.from('comercios').delete().eq('id', id)
     if (error) alert(error.message)
-    else load()
+    else {
+      auditar('comercio_eliminado', com?.nombre, `Comercio "${com?.nombre}" eliminado`)
+      load()
+    }
   }
 
   return (
