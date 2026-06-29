@@ -40,7 +40,7 @@ export default function AdminHome() {
       }
 
       const [emp, cards, txs] = await Promise.all([
-        supabase.from('empresas').select('id, nombre').order('nombre'),
+        supabase.from('empresas').select('id, nombre, activo').order('nombre'),
         gcq,
         txq,
       ])
@@ -54,10 +54,10 @@ export default function AdminHome() {
           .filter((t) => t.giftcards?.empresa_id === e.id)
           .reduce((a, t) => a + Number(t.monto), 0)
         const clientes = new Set(propias.filter((c) => c.cliente_id).map((c) => c.cliente_id)).size
-        return { id: e.id, nombre: e.nombre, emitido, usado, cantidad: propias.length, clientes }
+        return { id: e.id, nombre: e.nombre, activo: e.activo, emitido, usado, cantidad: propias.length, clientes }
       })
 
-      setEmpresas(porEmpresa)
+      setEmpresas(porEmpresa.sort((a, b) => (b.activo ? 1 : 0) - (a.activo ? 1 : 0)))
       setTotales({
         emitido: cs.reduce((a, c) => a + Number(c.monto_max), 0),
         usado: ts.reduce((a, t) => a + Number(t.monto), 0),
@@ -112,10 +112,15 @@ export default function AdminHome() {
             <div className="grid sm:grid-cols-2 gap-4">
               {empresas.map((e) => (
                 <Link key={e.id} to={`/admin/giftcards?empresa=${e.id}`}>
-                  <Card className="hover:shadow-md hover:border-indigo-300 transition cursor-pointer">
-                    <h3 className="font-semibold text-slate-800 mb-3 flex items-center justify-between">
-                      {e.nombre}
-                      <span className="text-xs font-normal text-indigo-600">Ver gift cards →</span>
+                  <Card className={`hover:shadow-md hover:border-indigo-300 transition cursor-pointer ${!e.activo ? 'opacity-50' : ''}`}>
+                    <h3 className="font-semibold text-slate-800 mb-3 flex items-center justify-between gap-2">
+                      <span className="truncate">{e.nombre}</span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${e.activo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
+                          {e.activo ? 'Activa' : 'Inactiva'}
+                        </span>
+                        <span className="text-xs font-normal text-indigo-600">Ver gift cards →</span>
+                      </span>
                     </h3>
                     <div className="grid grid-cols-2 gap-3">
                       <MiniStat label="Total emitido" value={money(e.emitido)} />
