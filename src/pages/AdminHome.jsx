@@ -103,12 +103,12 @@ export default function AdminHome() {
             <MiniStat label="Total emitido" value={money(totales.emitido)} />
             <MiniStat label="Total usado" value={money(totales.usado)} />
             <MiniStat label="Gift cards" value={totales.cantidad} />
-            <MiniStat label="Empresas" value={totales.empresas} />
+            <MiniStat label="Campañas" value={totales.empresas} />
           </div>
 
           {/* Desglose por empresa */}
           <div>
-            <h2 className="font-bold text-base mb-3">Por empresa</h2>
+            <h2 className="font-bold text-base mb-3">Por campaña</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {empresas.map((e) => (
                 <Link key={e.id} to={`/admin/giftcards?empresa=${e.id}`}>
@@ -128,7 +128,7 @@ export default function AdminHome() {
               ))}
               {empresas.length === 0 && (
                 <Card className="sm:col-span-2 text-center text-slate-400">
-                  No hay empresas cargadas todavía.
+                  No hay campañas cargadas todavía.
                 </Card>
               )}
             </div>

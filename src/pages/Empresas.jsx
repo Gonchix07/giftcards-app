@@ -3,19 +3,7 @@ import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Select, Card, Badge } from '../components/ui'
 
-// Máscara de CUIT: transforma lo escrito en XX-XXXXXXXX-X
-function formatCuit(value) {
-  const d = (value || '').replace(/\D/g, '').slice(0, 11)
-  const p1 = d.slice(0, 2)
-  const p2 = d.slice(2, 10)
-  const p3 = d.slice(10, 11)
-  let out = p1
-  if (d.length > 2) out += '-' + p2
-  if (d.length > 10) out += '-' + p3
-  return out
-}
-
-const empty = { nombre: '', cuit: '', comercio: '', activo: true }
+const empty = { nombre: '', comercio: '', activo: true }
 
 export default function Empresas() {
   const { profile } = useAuth()
@@ -60,7 +48,7 @@ export default function Empresas() {
 
   function startEdit(e) {
     setEditId(e.id)
-    setForm({ nombre: e.nombre, cuit: e.cuit || '', comercio: e.comercio || '', activo: e.activo })
+    setForm({ nombre: e.nombre, comercio: e.comercio || '', activo: e.activo })
   }
   function reset() {
     setForm(empty)
@@ -84,20 +72,20 @@ export default function Empresas() {
       editId ? 'empresa_modificada' : 'empresa_creada',
       form.nombre,
       editId
-        ? `Empresa "${form.nombre}" modificada (CUIT: ${form.cuit || '—'}, comercio: ${form.comercio || '—'})`
-        : `Empresa "${form.nombre}" creada (CUIT: ${form.cuit || '—'}, comercio: ${form.comercio || '—'})`,
+        ? `Campaña "${form.nombre}" modificada (comercio: ${form.comercio || '—'})`
+        : `Campaña "${form.nombre}" creada (comercio: ${form.comercio || '—'})`,
     )
     reset()
     load()
   }
 
   async function remove(id) {
-    if (!confirm('¿Eliminar esta empresa? (no se puede si tiene gift cards asociadas)')) return
+    if (!confirm('¿Eliminar esta campaña? (no se puede si tiene gift cards asociadas)')) return
     const emp = empresas.find((e) => e.id === id)
     const { error } = await supabase.from('empresas').delete().eq('id', id)
     if (error) alert(error.message)
     else {
-      auditar('empresa_eliminada', emp?.nombre, `Empresa "${emp?.nombre}" eliminada`)
+      auditar('empresa_eliminada', emp?.nombre, `Campaña "${emp?.nombre}" eliminada`)
       load()
     }
   }
@@ -208,21 +196,13 @@ export default function Empresas() {
     <div className="grid lg:grid-cols-3 gap-6 text-sm">
       <div className="lg:col-span-1 space-y-6">
         <Card className="h-fit">
-          <h2 className="font-bold text-base mb-4">{editId ? 'Editar empresa' : 'Nueva empresa'}</h2>
+          <h2 className="font-bold text-base mb-4">{editId ? 'Editar campaña' : 'Nueva campaña'}</h2>
           <form onSubmit={handleSubmit} className="space-y-3">
             <Input
               label="Nombre *"
               value={form.nombre}
               onChange={(e) => setForm({ ...form, nombre: e.target.value })}
               required
-            />
-            <Input
-              label="CUIT"
-              value={form.cuit}
-              onChange={(e) => setForm({ ...form, cuit: formatCuit(e.target.value) })}
-              placeholder="XX-XXXXXXXX-X"
-              inputMode="numeric"
-              maxLength={13}
             />
             <Select
               label="Comercio donde se usa la gift card"
@@ -437,13 +417,12 @@ export default function Empresas() {
       </div>
 
       <Card className="lg:col-span-2 min-w-0">
-        <h2 className="font-bold text-base mb-4">Empresas ({empresas.length})</h2>
+        <h2 className="font-bold text-base mb-4">Campañas ({empresas.length})</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-xs responsive-table">
             <thead>
               <tr className="text-left text-slate-500 border-b">
                 <th className="py-2">Nombre</th>
-                <th>CUIT</th>
                 <th></th>
                 <th>Uso</th>
                 <th>Estado</th>
@@ -454,7 +433,6 @@ export default function Empresas() {
               {empresas.map((e) => (
                 <tr key={e.id} className="border-b last:border-0">
                   <td className="py-2 font-medium" data-label="Nombre">{e.nombre}</td>
-                  <td data-label="CUIT">{e.cuit || '—'}</td>
                   <td data-label="Logo">
                     {logoDe(e.comercio) ? (
                       <img
@@ -481,8 +459,8 @@ export default function Empresas() {
               ))}
               {empresas.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="py-6 text-center text-slate-400">
-                    Sin empresas todavía
+                  <td colSpan="5" className="py-6 text-center text-slate-400">
+                    Sin campañas todavía
                   </td>
                 </tr>
               )}

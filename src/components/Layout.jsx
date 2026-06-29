@@ -8,7 +8,7 @@ export default function Layout() {
 
   const adminLinks = [
     { to: '/admin', label: 'Inicio', end: true },
-    { to: '/admin/empresas', label: 'Empresas' },
+    { to: '/admin/empresas', label: 'Campañas' },
     { to: '/admin/clientes', label: 'Clientes' },
     { to: '/admin/giftcards', label: 'Gift Cards' },
     { to: '/admin/reportes', label: 'Reportes' },

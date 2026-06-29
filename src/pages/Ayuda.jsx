@@ -10,7 +10,7 @@ const manual = [
       { t: 'p', text: 'La aplicación permite emitir y administrar Gift Cards para clientes. Cada Gift Card tiene un código único de 8 caracteres y un código QR, posee un monto máximo y admite usos parciales (queda saldo a favor del cliente hasta agotarse). El acceso es por email y contraseña, y lo que ve cada persona depende de su rol.' },
       { t: 'h3', text: 'Roles' },
       { t: 'ul', items: [
-        '<b>Administrador</b>: acceso total (empresas, comercios, clientes, grupos, gift cards, reportes, usuarios y plantilla de mails).',
+        '<b>Administrador</b>: acceso total (campañas, comercios, clientes, grupos, gift cards, reportes, usuarios y plantilla de mails).',
         '<b>Cajero</b>: canjea gift cards (por código o QR) del comercio asignado y ve sus usos del día.',
         '<b>Atención al Cliente</b>: busca clientes y consulta/descarga/envía las gift cards asignadas.',
         '<b>Tesorería</b>: solo lectura del panel (Inicio) y los reportes.',
@@ -34,15 +34,15 @@ const manual = [
     title: '3. Rol Administrador',
     blocks: [
       { t: 'h3', text: '3.1 Inicio (Dashboard)' },
-      { t: 'p', text: 'Muestra totales generales y un desglose por empresa: total emitido, total usado, cantidad de gift cards y clientes. Arriba a la derecha se elige el período. Cada tarjeta de empresa abre la lista de Gift Cards filtrada por esa empresa.' },
-      { t: 'img', src: '/manual/02-dashboard.png', alt: 'Dashboard con totales y desglose por empresa' },
-      { t: 'h3', text: '3.2 Empresas y Comercios' },
+      { t: 'p', text: 'Muestra totales generales y un desglose por campaña: total emitido, total usado, cantidad de gift cards y clientes. Arriba a la derecha se elige el período. Cada tarjeta de campaña abre la lista de Gift Cards filtrada por esa campaña.' },
+      { t: 'img', src: '/manual/02-dashboard.png', alt: 'Dashboard con totales y desglose por campaña' },
+      { t: 'h3', text: '3.2 Campañas y Comercios' },
       { t: 'ul', items: [
         'Los <b>comercios</b> se crean con nombre, logo y color de la tarjeta (el logo y el color pertenecen al comercio).',
-        'Las <b>empresas</b> se crean con nombre, CUIT y el comercio donde se usa la gift card.',
-        'No se puede eliminar una empresa que tenga gift cards asociadas.',
+        'Las <b>campañas</b> se crean con nombre y el comercio donde se usa la gift card.',
+        'No se puede eliminar una campaña que tenga gift cards asociadas.',
       ] },
-      { t: 'img', src: '/manual/03-empresas.png', alt: 'Sección Empresas y Comercios' },
+      { t: 'img', src: '/manual/03-empresas.png', alt: 'Sección Campañas y Comercios' },
       { t: 'h3', text: '3.3 Clientes y Grupos' },
       { t: 'ul', items: [
         'Cargar nombre, DNI, email (opcional) y código de cliente (opcional, 5 caracteres, único).',
@@ -52,7 +52,7 @@ const manual = [
       { t: 'img', src: '/manual/04-clientes.png', alt: 'Sección Clientes y Grupos' },
       { t: 'h3', text: '3.4 Gift Cards' },
       { t: 'ol', items: [
-        '<b>Emisión individual</b>: elegir empresa, opcional cliente, monto y vencimiento, y presionar “Generar y crear QR”.',
+        '<b>Emisión individual</b>: elegir campaña, opcional cliente, monto y vencimiento, y presionar “Generar y crear QR”.',
         '<b>Generación masiva</b>: por cantidad, o eligiendo un <b>grupo</b> para generar una gift card por integrante (con opción de enviar el QR por email).',
       ] },
       { t: 'ul', items: [
@@ -116,7 +116,7 @@ const manual = [
     blocks: [
       { t: 'p', text: 'Acceso de solo lectura. Ve únicamente dos secciones:' },
       { t: 'ul', items: [
-        '<b>Inicio (Dashboard)</b>: totales y desglose por empresa, con selector de período.',
+        '<b>Inicio (Dashboard)</b>: totales y desglose por campaña, con selector de período.',
         '<b>Reportes</b>: Saldos, Usos y Auditoría, con buscador y exportación a CSV.',
       ] },
     ],

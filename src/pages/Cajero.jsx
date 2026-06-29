@@ -177,7 +177,7 @@ export default function Cajero() {
         <div><b>Cantidad de gift cards:</b> ${filas.length}</div>
       </div>
       <table>
-        <thead><tr><th>Hora</th><th>Código</th><th>Cliente</th><th>Empresa</th><th class="r">Monto</th></tr></thead>
+        <thead><tr><th>Hora</th><th>Código</th><th>Cliente</th><th>Campaña</th><th class="r">Monto</th></tr></thead>
         <tbody>${filasHtml}</tbody>
         <tfoot><tr><td colspan="4" class="r">TOTAL</td><td class="r">${money(total)}</td></tr></tfoot>
       </table>
@@ -291,7 +291,7 @@ export default function Cajero() {
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm mb-4">
             <div>
-              <p className="text-slate-500">Empresa</p>
+              <p className="text-slate-500">Campaña</p>
               <p className="font-medium">{card.empresas?.nombre || '—'}</p>
             </div>
             <div>

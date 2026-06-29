@@ -108,7 +108,7 @@ export default function GiftCards() {
     e.preventDefault()
     setError('')
     const monto = parseFloat(form.monto_max)
-    if (!form.empresa_id) return setError('Elegí una empresa.')
+    if (!form.empresa_id) return setError('Elegí una campaña.')
     if (!(monto > 0)) return setError('El monto máximo debe ser mayor a cero.')
     setLoading(true)
 
@@ -161,7 +161,7 @@ export default function GiftCards() {
     setMasivoMsg('')
     const cantidad = parseInt(masivo.cantidad, 10)
     const monto = parseFloat(masivo.monto_max)
-    if (!masivo.empresa_id) return setMasivoError('Elegí una empresa.')
+    if (!masivo.empresa_id) return setMasivoError('Elegí una campaña.')
     if (!(monto > 0)) return setMasivoError('El monto máximo debe ser mayor a cero.')
 
     const conGrupo = !!masivo.grupo_id
@@ -436,7 +436,7 @@ export default function GiftCards() {
         <h2 className="font-bold text-base mb-4">Emitir Gift Card</h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <Select
-            label="Empresa *"
+            label="Campaña *"
             value={form.empresa_id}
             onChange={(e) => setForm({ ...form, empresa_id: e.target.value })}
           >
@@ -485,13 +485,13 @@ export default function GiftCards() {
       <Card>
         <h2 className="font-bold text-base mb-1">Generar de forma masiva</h2>
         <p className="text-sm text-slate-500 mb-4">
-          Crea varias gift cards de una empresa con el mismo monto y vencimiento. Sin grupo quedan{' '}
+          Crea varias gift cards de una campaña con el mismo monto y vencimiento. Sin grupo quedan{' '}
           <strong>sin cliente</strong> (asignalos desde la tabla). Si elegís un <strong>grupo</strong>, se genera una
           gift card ya asignada a cada integrante (la cantidad debe coincidir).
         </p>
         <form onSubmit={generarMasivo} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <Select
-            label="Empresa *"
+            label="Campaña *"
             value={masivo.empresa_id}
             onChange={(e) => setMasivo({ ...masivo, empresa_id: e.target.value })}
           >
@@ -577,7 +577,7 @@ export default function GiftCards() {
               value={filtroEmpresa}
               onChange={(e) => setFiltroEmpresa(e.target.value)}
             >
-              <option value="">Todas las empresas</option>
+              <option value="">Todas las campañas</option>
               {empresas.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.nombre}
@@ -607,7 +607,7 @@ export default function GiftCards() {
                   />
                 </th>
                 <th>Código</th>
-                <th>Empresa</th>
+                <th>Campaña</th>
                 <th>Cliente</th>
                 <th>Máx.</th>
                 <th>Saldo</th>
@@ -629,7 +629,7 @@ export default function GiftCards() {
                     />
                   </td>
                   <td className="py-2 font-mono font-semibold" data-label="Código">{c.codigo}</td>
-                  <td data-label="Empresa">{c.empresas?.nombre || '—'}</td>
+                  <td data-label="Campaña">{c.empresas?.nombre || '—'}</td>
                   <td data-label="Cliente">
                     {c.cliente_id ? (
                       // Ya asignada: no se puede cambiar
@@ -678,7 +678,7 @@ export default function GiftCards() {
               {cardsFiltradas.length === 0 && (
                 <tr>
                   <td colSpan="9" className="py-6 text-center text-slate-400">
-                    {filtroEmpresa ? 'Esta empresa no tiene gift cards' : 'Sin gift cards todavía'}
+                    {filtroEmpresa ? 'Esta campaña no tiene gift cards' : 'Sin gift cards todavía'}
                   </td>
                 </tr>
               )}

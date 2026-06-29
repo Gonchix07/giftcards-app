@@ -199,7 +199,7 @@ export default function Atencion() {
               <thead>
                 <tr className="text-center text-slate-500 border-b">
                   <th className="py-2">Código</th>
-                  <th>Empresa</th>
+                  <th>Campaña</th>
                   <th>Máx.</th>
                   <th>Saldo</th>
                   <th>Vence</th>
@@ -211,7 +211,7 @@ export default function Atencion() {
                 {cardsFiltradas.map((c) => (
                   <tr key={c.id} className="border-b last:border-0">
                     <td className="py-2 font-mono font-semibold" data-label="Código">{c.codigo}</td>
-                    <td data-label="Empresa">{c.empresas?.nombre || '—'}</td>
+                    <td data-label="Campaña">{c.empresas?.nombre || '—'}</td>
                     <td data-label="Máx.">{money(c.monto_max)}</td>
                     <td className="font-medium" data-label="Saldo">{money(c.saldo)}</td>
                     <td className={vencida(c) ? 'text-red-600 font-medium' : ''} data-label="Vence">

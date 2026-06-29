@@ -144,7 +144,7 @@ export default function Reportes() {
                   cardsFiltrado,
                   [
                     { label: 'Codigo', get: (r) => r.codigo },
-                    { label: 'Empresa', get: (r) => r.empresas?.nombre },
+                    { label: 'Campaña', get: (r) => r.empresas?.nombre },
                     { label: 'Cliente', get: (r) => r.clientes?.nombre },
                     { label: 'DNI', get: (r) => r.clientes?.dni },
                     { label: 'CodigoCliente', get: (r) => r.clientes?.codigo_cliente },
@@ -166,7 +166,7 @@ export default function Reportes() {
               <thead>
                 <tr className="text-center text-slate-500 border-b">
                   <th className="py-2">Código</th>
-                  <th>Empresa</th>
+                  <th>Campaña</th>
                   <th>Cliente</th>
                   <th>Cód. cliente</th>
                   <th>Máx.</th>
@@ -180,7 +180,7 @@ export default function Reportes() {
                 {cardsFiltrado.map((c) => (
                   <tr key={c.id} className="border-b last:border-0">
                     <td className="py-2 font-mono font-semibold" data-label="Código">{c.codigo}</td>
-                    <td data-label="Empresa">{c.empresas?.nombre || '—'}</td>
+                    <td data-label="Campaña">{c.empresas?.nombre || '—'}</td>
                     <td data-label="Cliente">{c.clientes?.nombre || <span className="text-slate-400">sin asignar</span>}</td>
                     <td data-label="Cód. cliente">{c.clientes?.codigo_cliente || '—'}</td>
                     <td data-label="Máx.">{money(c.monto_max)}</td>
@@ -231,7 +231,7 @@ export default function Reportes() {
                   [
                     { label: 'Fecha', get: (r) => new Date(r.created_at).toLocaleString('es-AR') },
                     { label: 'Codigo', get: (r) => r.giftcards?.codigo },
-                    { label: 'Empresa', get: (r) => r.giftcards?.empresas?.nombre },
+                    { label: 'Campaña', get: (r) => r.giftcards?.empresas?.nombre },
                     { label: 'Cliente', get: (r) => r.giftcards?.clientes?.nombre },
                     { label: 'CodigoCliente', get: (r) => r.giftcards?.clientes?.codigo_cliente },
                     { label: 'Monto', get: (r) => r.monto },
@@ -302,7 +302,7 @@ export default function Reportes() {
                     { label: 'Rol', get: (r) => r.usuario_rol },
                     { label: 'Accion', get: (r) => r.accion },
                     { label: 'Codigo', get: (r) => r.giftcard_codigo },
-                    { label: 'Empresa', get: (r) => r.empresa },
+                    { label: 'Campaña', get: (r) => r.empresa },
                     { label: 'Cliente', get: (r) => r.cliente },
                     { label: 'Detalle', get: (r) => r.detalle },
                   ],
