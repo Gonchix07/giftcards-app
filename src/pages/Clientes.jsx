@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Select, Card } from '../components/ui'
 
 const empty = { nombre: '', dni: '', email: '', telefono: '', codigo_cliente: '', grupo_id: '' }
@@ -11,6 +12,7 @@ function formatTel(v) {
 }
 
 export default function Clientes() {
+  const { profile } = useAuth()
   const [clientes, setClientes] = useState([])
   const [grupos, setGrupos] = useState([])
   const [form, setForm] = useState(empty)
@@ -18,6 +20,16 @@ export default function Clientes() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [q, setQ] = useState('')
+
+  function auditar(accion, cliente, detalle) {
+    supabase.from('auditoria').insert({
+      usuario_email: profile?.email,
+      usuario_rol: profile?.role,
+      accion,
+      cliente,
+      detalle,
+    })
+  }
 
   // Alta de grupos
   const [nombreGrupo, setNombreGrupo] = useState('')
@@ -86,15 +98,27 @@ export default function Clientes() {
       else setError(m)
       return
     }
+    const grupo = grupos.find((g) => g.id === form.grupo_id)
+    auditar(
+      editId ? 'cliente_modificado' : 'cliente_creado',
+      form.nombre,
+      editId
+        ? `Cliente "${form.nombre}" (DNI: ${form.dni}) modificado`
+        : `Cliente "${form.nombre}" (DNI: ${form.dni}, email: ${form.email}${grupo ? ', grupo: ' + grupo.nombre : ''}) creado`,
+    )
     reset()
     load()
   }
 
   async function remove(id) {
     if (!confirm('¿Eliminar este cliente? (no se puede si tiene gift cards asignadas)')) return
+    const cl = clientes.find((c) => c.id === id)
     const { error } = await supabase.from('clientes').delete().eq('id', id)
     if (error) alert(error.message)
-    else load()
+    else {
+      auditar('cliente_eliminado', cl?.nombre, `Cliente "${cl?.nombre}" (DNI: ${cl?.dni}) eliminado`)
+      load()
+    }
   }
 
   // ---------- Grupos ----------
@@ -109,15 +133,20 @@ export default function Clientes() {
       setGrupoError(error.message.includes('duplicate') ? 'Ya existe un grupo con ese nombre.' : error.message)
       return
     }
+    auditar('grupo_creado', null, `Grupo "${nombreGrupo.trim()}" creado`)
     setNombreGrupo('')
     load()
   }
 
   async function eliminarGrupo(id) {
     if (!confirm('¿Eliminar este grupo? Los clientes asignados quedarán sin grupo.')) return
+    const gr = grupos.find((g) => g.id === id)
     const { error } = await supabase.from('grupos').delete().eq('id', id)
     if (error) alert(error.message)
-    else load()
+    else {
+      auditar('grupo_eliminado', null, `Grupo "${gr?.nombre}" eliminado`)
+      load()
+    }
   }
 
   const filtered = clientes.filter(
