@@ -66,11 +66,11 @@ export async function composeCardDataURL(
     // QR: tamaño y posición según qr_posicion
     const qrSize = 185
     const qrY = H - qrSize - 72
-    const qrX = qrPosicion === 'derecha' ? W - qrSize - pad : pad
+    const qrX = qrPosicion === 'derecha' ? W - qrSize - pad - 50 : pad + 50
 
     // Etiqueta "ESCANEÁME!" sobre el QR
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'
-    ctx.font = '600 15px Arial'
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 22px Arial'
     ctx.textAlign = 'left'
     ctx.fillText('ESCANEÁME!', qrX, qrY - 10)
 
@@ -78,10 +78,10 @@ export async function composeCardDataURL(
     ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize)
 
     // Código alfanumérico bajo el QR
-    ctx.fillStyle = 'rgba(0,0,0,0.7)'
-    ctx.font = 'bold 20px monospace'
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 32px monospace'
     ctx.textAlign = 'left'
-    ctx.fillText(codigo, qrX, qrY + qrSize + 22)
+    ctx.fillText(codigo, qrX, qrY + qrSize + 32)
   } else {
     // ── Modo clásico: fondo sólido ───────────────────────────────────────────
     ctx.fillStyle = bg
