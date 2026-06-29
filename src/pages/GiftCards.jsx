@@ -55,9 +55,11 @@ export default function GiftCards() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [qrCard, setQrCard] = useState(null)
+  const [cardPreviewUrl, setCardPreviewUrl] = useState(null)
   const [mailMsg, setMailMsg] = useState('')
   const [sending, setSending] = useState(false)
   const qrRef = useRef(null)
+  const qrDownloadRef = useRef(null) // QR con fondo blanco para composición sobre template
 
   // Generación masiva
   const [masivo, setMasivo] = useState({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '', grupo_id: '', enviarEmails: false, uso_parcial: true })
@@ -87,7 +89,7 @@ export default function GiftCards() {
       supabase.from('empresas').select('id, nombre, activo, comercio').order('nombre'),
       supabase.from('clientes').select('id, nombre, dni, email, grupo_id').order('nombre'),
       supabase.from('grupos').select('id, nombre').order('nombre'),
-      supabase.from('comercios').select('nombre, color'),
+      supabase.from('comercios').select('nombre, color, template_url, qr_posicion'),
     ])
     setCards(c.data || [])
     setEmpresas(e.data || [])
@@ -95,7 +97,9 @@ export default function GiftCards() {
     setGrupos(gr.data || [])
     setComercios(co.data || [])
   }
-  const colorComercio = (nombre) => comercios.find((x) => x.nombre === nombre)?.color || '#1e3a8a'
+  const colorComercio    = (nombre) => comercios.find((x) => x.nombre === nombre)?.color || '#1e3a8a'
+  const templateComercio = (nombre) => comercios.find((x) => x.nombre === nombre)?.template_url || null
+  const qrPosComercio    = (nombre) => comercios.find((x) => x.nombre === nombre)?.qr_posicion || 'izquierda'
   useEffect(() => {
     load()
   }, [])
@@ -217,6 +221,8 @@ export default function GiftCards() {
           empresa: empresaNombre,
           comercio: empresaComercio,
           color: colorComercio(empresaComercio),
+          templateUrl: templateComercio(empresaComercio),
+          qrPosicion: qrPosComercio(empresaComercio),
           vencimiento: venc,
           email: integrantesGrupo[i].email,
           nombre: integrantesGrupo[i].nombre,
@@ -241,16 +247,21 @@ export default function GiftCards() {
           sinEmail++
           continue
         }
-        const canvas = document.querySelector(`[data-qrbulk="${it.codigo}"] canvas`)
+        const selector = it.templateUrl
+          ? `[data-qrbulktpl="${it.codigo}"] canvas`
+          : `[data-qrbulk="${it.codigo}"] canvas`
+        const canvas = document.querySelector(selector)
         if (!canvas) {
           fallo++
           continue
         }
-        const dataUrl = composeCardDataURL(canvas, {
+        const dataUrl = await composeCardDataURL(canvas, {
           codigo: it.codigo,
           comercio: it.comercio || '',
           monto: money(it.montoMax),
           bg: it.color,
+          templateUrl: it.templateUrl || null,
+          qrPosicion: it.qrPosicion || 'izquierda',
         })
         try {
           const resp = await fetch('/api/send-giftcard', {
@@ -322,24 +333,56 @@ export default function GiftCards() {
     load()
   }
 
+  // Genera la imagen compuesta (template + QR) para la preview del popup
+  useEffect(() => {
+    if (!qrCard) { setCardPreviewUrl(null); return }
+    const comercioNombre = qrCard.empresas?.comercio || ''
+    const tplUrl = templateComercio(comercioNombre)
+    if (!tplUrl) { setCardPreviewUrl(null); return }
+    let cancelled = false
+    // Pequeño delay para que el canvas oculto esté renderizado
+    const t = setTimeout(async () => {
+      const canvas = qrDownloadRef.current?.querySelector('canvas')
+      if (!canvas || cancelled) return
+      const url = await composeCardDataURL(canvas, {
+        codigo: qrCard.codigo,
+        comercio: comercioNombre,
+        monto: money(qrCard.monto_max),
+        bg: colorComercio(comercioNombre),
+        templateUrl: tplUrl,
+        qrPosicion: qrPosComercio(comercioNombre),
+      })
+      if (!cancelled) setCardPreviewUrl(url)
+    }, 120)
+    return () => { cancelled = true; clearTimeout(t) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qrCard, comercios])
+
   function cerrarQr() {
     setQrCard(null)
+    setCardPreviewUrl(null)
     setMailMsg('')
   }
 
-  function tarjetaDataURL() {
-    const canvas = qrRef.current?.querySelector('canvas')
+  async function tarjetaDataURL() {
+    const comercioNombre = qrCard.empresas?.comercio || ''
+    const tplUrl = templateComercio(comercioNombre)
+    // Si hay template usa el QR con fondo blanco (para composición correcta sobre el PNG)
+    const ref = tplUrl ? qrDownloadRef : qrRef
+    const canvas = ref.current?.querySelector('canvas')
     if (!canvas) return null
-    return composeCardDataURL(canvas, {
+    return await composeCardDataURL(canvas, {
       codigo: qrCard.codigo,
-      comercio: qrCard.empresas?.comercio || '',
+      comercio: comercioNombre,
       monto: money(qrCard.monto_max),
-      bg: colorComercio(qrCard.empresas?.comercio),
+      bg: colorComercio(comercioNombre),
+      templateUrl: tplUrl,
+      qrPosicion: qrPosComercio(comercioNombre),
     })
   }
 
-  function descargarQR() {
-    const dataUrl = tarjetaDataURL()
+  async function descargarQR() {
+    const dataUrl = await tarjetaDataURL()
     if (!dataUrl) return
     const link = document.createElement('a')
     link.download = `giftcard-${qrCard.codigo}.png`
@@ -354,7 +397,7 @@ export default function GiftCards() {
       setMailMsg('⚠️ El cliente no tiene email cargado (o la gift card no tiene cliente asignado).')
       return
     }
-    const dataUrl = tarjetaDataURL()
+    const dataUrl = await tarjetaDataURL()
     if (!dataUrl) return
     setSending(true)
     try {
@@ -648,8 +691,15 @@ export default function GiftCards() {
       {colaEmails.length > 0 && (
         <div style={{ position: 'absolute', left: -9999, top: -9999 }} aria-hidden>
           {colaEmails.map((it) => (
-            <div key={it.codigo} data-qrbulk={it.codigo}>
-              <QRCodeCanvas value={it.codigo} size={220} bgColor={it.color} fgColor="#ffffff" includeMargin />
+            <div key={it.codigo}>
+              {/* QR coloreado (modo sin template) */}
+              <div data-qrbulk={it.codigo}>
+                <QRCodeCanvas value={it.codigo} size={220} bgColor={it.color} fgColor="#ffffff" includeMargin />
+              </div>
+              {/* QR blanco (modo template) */}
+              <div data-qrbulktpl={it.codigo}>
+                <QRCodeCanvas value={it.codigo} size={220} bgColor="#ffffff" fgColor="#111111" includeMargin />
+              </div>
             </div>
           ))}
         </div>
@@ -672,29 +722,44 @@ export default function GiftCards() {
             >
               ✕
             </button>
-            {/* Tarjeta estilo crédito: fondo según comercio, QR blanco */}
-            <div
-              className="text-white rounded-2xl p-6 flex items-center gap-4 text-left shadow-lg"
-              style={{ backgroundColor: colorComercio(qrCard.empresas?.comercio) }}
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-xs tracking-[0.25em] text-white/60">GIFT CARD</p>
-                <p className="font-mono text-2xl font-bold tracking-widest mt-6 break-all">{qrCard.codigo}</p>
-                <p className="text-base text-white/80 mt-1">{money(qrCard.monto_max)}</p>
-                {qrCard.empresas?.comercio && (
-                  <p className="text-xs text-white/60 mt-1">Solo en: {qrCard.empresas.comercio}</p>
-                )}
-              </div>
-              <div ref={qrRef} className="shrink-0 rounded-lg overflow-hidden">
-                <QRCodeCanvas
-                  value={qrCard.codigo}
-                  size={180}
-                  bgColor={colorComercio(qrCard.empresas?.comercio)}
-                  fgColor="#ffffff"
-                  includeMargin
-                />
-              </div>
+            {/* QR oculto con fondo blanco para composición sobre template PNG */}
+            <div ref={qrDownloadRef} style={{ position: 'absolute', left: -9999 }} aria-hidden>
+              <QRCodeCanvas value={qrCard.codigo} size={220} bgColor="#ffffff" fgColor="#111111" includeMargin />
             </div>
+
+            {cardPreviewUrl ? (
+              /* Vista con template PNG compuesto */
+              <img
+                src={cardPreviewUrl}
+                alt={`Gift Card ${qrCard.codigo}`}
+                className="w-full rounded-xl shadow-lg"
+                style={{ aspectRatio: '1.586' }}
+              />
+            ) : (
+              /* Vista clásica: tarjeta React con color sólido */
+              <div
+                className="text-white rounded-2xl p-6 flex items-center gap-4 text-left shadow-lg"
+                style={{ backgroundColor: colorComercio(qrCard.empresas?.comercio) }}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs tracking-[0.25em] text-white/60">GIFT CARD</p>
+                  <p className="font-mono text-2xl font-bold tracking-widest mt-6 break-all">{qrCard.codigo}</p>
+                  <p className="text-base text-white/80 mt-1">{money(qrCard.monto_max)}</p>
+                  {qrCard.empresas?.comercio && (
+                    <p className="text-xs text-white/60 mt-1">Solo en: {qrCard.empresas.comercio}</p>
+                  )}
+                </div>
+                <div ref={qrRef} className="shrink-0 rounded-lg overflow-hidden">
+                  <QRCodeCanvas
+                    value={qrCard.codigo}
+                    size={180}
+                    bgColor={colorComercio(qrCard.empresas?.comercio)}
+                    fgColor="#ffffff"
+                    includeMargin
+                  />
+                </div>
+              </div>
+            )}
             {qrCard.fecha_vencimiento && (
               <p className="text-xs text-amber-600 mt-2">
                 Vence el {new Date(qrCard.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')}

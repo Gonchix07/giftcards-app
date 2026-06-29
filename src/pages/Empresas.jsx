@@ -25,11 +25,12 @@ export default function Empresas() {
   const [loading, setLoading] = useState(false)
 
   // Alta de comercios
-  const [comForm, setComForm] = useState({ nombre: '', logo_url: '', color: '#1e3a8a' })
+  const [comForm, setComForm] = useState({ nombre: '', logo_url: '', color: '#1e3a8a', template_url: '', qr_posicion: 'izquierda' })
   const [comEditId, setComEditId] = useState(null)
   const [comError, setComError] = useState('')
   const [comLoading, setComLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadingTpl, setUploadingTpl] = useState(false)
 
   async function load() {
     const [emp, com] = await Promise.all([
@@ -96,15 +97,38 @@ export default function Empresas() {
     setUploading(false)
   }
 
+  async function subirTemplate(file) {
+    if (!file) return
+    if (!file.type.startsWith('image/')) return setComError('El template debe ser una imagen PNG.')
+    setComError('')
+    setUploadingTpl(true)
+    const ext = file.name.split('.').pop()
+    const path = `tpl_${crypto.randomUUID()}.${ext}`
+    const { error: upErr } = await supabase.storage.from('logos').upload(path, file, { upsert: true })
+    if (upErr) {
+      setUploadingTpl(false)
+      return setComError('No se pudo subir el template: ' + upErr.message)
+    }
+    const { data } = supabase.storage.from('logos').getPublicUrl(path)
+    setComForm((f) => ({ ...f, template_url: data.publicUrl }))
+    setUploadingTpl(false)
+  }
+
   function startEditComercio(c) {
     setComEditId(c.id)
     setComError('')
-    setComForm({ nombre: c.nombre, logo_url: c.logo_url || '', color: c.color || '#1e3a8a' })
+    setComForm({
+      nombre: c.nombre,
+      logo_url: c.logo_url || '',
+      color: c.color || '#1e3a8a',
+      template_url: c.template_url || '',
+      qr_posicion: c.qr_posicion || 'izquierda',
+    })
   }
   function resetComercio() {
     setComEditId(null)
     setComError('')
-    setComForm({ nombre: '', logo_url: '', color: '#1e3a8a' })
+    setComForm({ nombre: '', logo_url: '', color: '#1e3a8a', template_url: '', qr_posicion: 'izquierda' })
   }
 
   async function crearComercio(e) {
@@ -113,7 +137,13 @@ export default function Empresas() {
     if (!comForm.nombre.trim()) return
     setComLoading(true)
     const nuevoNombre = comForm.nombre.trim()
-    const payload = { nombre: nuevoNombre, logo_url: comForm.logo_url || null, color: comForm.color }
+    const payload = {
+      nombre: nuevoNombre,
+      logo_url: comForm.logo_url || null,
+      color: comForm.color,
+      template_url: comForm.template_url || null,
+      qr_posicion: comForm.qr_posicion || 'izquierda',
+    }
     const nombreAnterior = comEditId ? comercios.find((c) => c.id === comEditId)?.nombre : null
     const { error } = comEditId
       ? await supabase.from('comercios').update(payload).eq('id', comEditId)
@@ -249,7 +279,85 @@ export default function Empresas() {
                 onChange={(e) => setComForm({ ...comForm, color: e.target.value })}
                 className="h-8 w-12 rounded border border-slate-300 bg-white p-0.5 cursor-pointer"
               />
+              <span className="text-slate-400 text-xs">(se usa si no hay template)</span>
             </label>
+
+            {/* Template PNG de la tarjeta */}
+            <div>
+              <span className="block text-sm font-medium text-slate-600 mb-1">Template PNG de la tarjeta</span>
+              <div className="flex flex-wrap items-center gap-4 p-3 border border-dashed border-slate-300 rounded-lg bg-slate-50">
+                {comForm.template_url ? (
+                  <img
+                    src={comForm.template_url}
+                    alt="template"
+                    className="h-16 rounded-lg border bg-white object-cover shrink-0"
+                    style={{ aspectRatio: '1.586' }}
+                  />
+                ) : (
+                  <div className="h-16 grid place-items-center rounded-lg border-2 border-dashed border-slate-300 bg-white text-slate-300 text-2xl shrink-0 px-4">
+                    🖼️
+                  </div>
+                )}
+                <div className="flex flex-col items-start gap-1.5">
+                  <label
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition ${
+                      uploadingTpl ? 'bg-slate-200 text-slate-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                    }`}
+                  >
+                    {uploadingTpl ? '⏳ Subiendo…' : comForm.template_url ? '🔄 Cambiar template' : '⬆️ Importar modelo PNG'}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      disabled={uploadingTpl}
+                      onChange={(e) => subirTemplate(e.target.files?.[0])}
+                      className="hidden"
+                    />
+                  </label>
+                  {comForm.template_url && !uploadingTpl && (
+                    <button
+                      type="button"
+                      className="text-xs text-red-600 hover:underline"
+                      onClick={() => setComForm({ ...comForm, template_url: '' })}
+                    >
+                      Quitar template
+                    </button>
+                  )}
+                </div>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                El sistema superpondrá el QR y el código sobre este modelo.
+              </p>
+            </div>
+
+            {/* Posición del QR en el template */}
+            {comForm.template_url && (
+              <div>
+                <span className="block text-sm font-medium text-slate-600 mb-1">Posición del QR en el template</span>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="qr_posicion"
+                      value="izquierda"
+                      checked={comForm.qr_posicion === 'izquierda'}
+                      onChange={() => setComForm({ ...comForm, qr_posicion: 'izquierda' })}
+                    />
+                    ← Izquierda
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      name="qr_posicion"
+                      value="derecha"
+                      checked={comForm.qr_posicion === 'derecha'}
+                      onChange={() => setComForm({ ...comForm, qr_posicion: 'derecha' })}
+                    />
+                    → Derecha
+                  </label>
+                </div>
+              </div>
+            )}
+
             {comError && <p className="text-sm text-red-600">{comError}</p>}
             <div className="flex gap-2">
               <Button type="submit" disabled={comLoading || uploading}>
