@@ -59,8 +59,8 @@ export async function composeCardDataURL(
     const qrSize = Math.round(185 * s)
     const qrY    = H - qrSize - Math.round(77 * sy)
     const qrX    = qrPosicion === 'derecha'
-      ? W - qrSize - pad - Math.round(35 * sx)
-      : pad + Math.round(35 * sx)
+      ? W - qrSize - pad - Math.round(50 * sx)
+      : pad + Math.round(50 * sx)
     const qrCx   = qrX + qrSize / 2 // centro horizontal del bloque QR
 
     // "ESCANEÁME!" centrado sobre el QR
