@@ -65,8 +65,8 @@ export async function composeCardDataURL(
 
     // QR: tamaño y posición según qr_posicion
     const qrSize = 185
-    const qrY = H - qrSize - 72
-    const qrX = qrPosicion === 'derecha' ? W - qrSize - pad - 50 : pad + 50
+    const qrY = H - qrSize - 92
+    const qrX = qrPosicion === 'derecha' ? W - qrSize - pad - 35 : pad + 35
 
     // Etiqueta "ESCANEÁME!" sobre el QR
     ctx.fillStyle = '#ffffff'
