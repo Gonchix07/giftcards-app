@@ -129,6 +129,10 @@ export default function AdminHome() {
                       <MiniStat label="Gift cards" value={e.cantidad} />
                       <MiniStat label="Canjeadas" value={e.canjeadas} />
                       <MiniStat label="Clientes" value={e.clientes} />
+                      <MiniStat
+                        label="Efectividad"
+                        value={e.cantidad > 0 ? `${Math.round((e.canjeadas / e.cantidad) * 100)}%` : '—'}
+                      />
                     </div>
                   </Card>
                 </Link>
