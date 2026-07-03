@@ -6,6 +6,11 @@ import { Button, Input, Select, Card, Badge, money } from '../components/ui'
 import { composeCardDataURL } from '../lib/cardImage'
 import ClienteCombo from '../components/ClienteCombo'
 
+function fechaDefault() {
+  const d = new Date(Date.now() + 30 * 86400000)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // Genera un código de 8 caracteres alfanuméricos (mayúsculas + dígitos)
 function generarCodigo() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -51,7 +56,7 @@ export default function GiftCards() {
   const [clientes, setClientes] = useState([])
   const [grupos, setGrupos] = useState([])
   const [comercios, setComercios] = useState([])
-  const [form, setForm] = useState({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: '', uso_parcial: true })
+  const [form, setForm] = useState({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: fechaDefault(), uso_parcial: true })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [qrCard, setQrCard] = useState(null)
@@ -62,7 +67,7 @@ export default function GiftCards() {
   const qrDownloadRef = useRef(null) // QR con fondo blanco para composición sobre template
 
   // Generación masiva
-  const [masivo, setMasivo] = useState({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '', grupo_id: '', enviarEmails: false, uso_parcial: true })
+  const [masivo, setMasivo] = useState({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: fechaDefault(), grupo_id: '', enviarEmails: false, uso_parcial: true })
   const [masivoError, setMasivoError] = useState('')
   const [masivoMsg, setMasivoMsg] = useState('')
   const [masivoLoading, setMasivoLoading] = useState(false)
@@ -131,7 +136,7 @@ export default function GiftCards() {
         .single()
       if (!error) {
         setLoading(false)
-        setForm({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: '', uso_parcial: true })
+        setForm({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: fechaDefault(), uso_parcial: true })
         setMailMsg('')
         setQrCard(data)
         load()
@@ -230,7 +235,7 @@ export default function GiftCards() {
       )
     }
 
-    setMasivo({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: '', grupo_id: '', enviarEmails: false, uso_parcial: true })
+    setMasivo({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: fechaDefault(), grupo_id: '', enviarEmails: false, uso_parcial: true })
     load()
   }
 
