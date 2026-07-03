@@ -9,6 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPass, setShowPass] = useState(false)
   const navigate = useNavigate()
 
   // Si ya hay sesión (y terminó de cargar el perfil), ir a la raíz que redirige por rol
@@ -52,14 +53,25 @@ export default function Login() {
             required
             autoComplete="email"
           />
-          <Input
-            label="Contraseña"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
+          <div className="relative">
+            <Input
+              label="Contraseña"
+              type={showPass ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass((v) => !v)}
+              className="absolute right-3 bottom-2 text-slate-400 hover:text-slate-600 text-lg leading-none"
+              tabIndex={-1}
+              aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            >
+              {showPass ? '🙈' : '👁️'}
+            </button>
+          </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? 'Ingresando…' : 'Ingresar'}

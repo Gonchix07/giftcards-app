@@ -32,7 +32,7 @@ export default function AdminHome() {
       // Fecha de corte según el período elegido (0 = todo el historial)
       const desde = dias > 0 ? new Date(Date.now() - dias * 86400000).toISOString() : null
 
-      let gcq = supabase.from('giftcards').select('empresa_id, monto_max, cliente_id, created_at')
+      let gcq = supabase.from('giftcards').select('empresa_id, monto_max, cliente_id, created_at, estado')
       let txq = supabase.from('transacciones').select('monto, created_at, giftcards(empresa_id)')
       if (desde) {
         gcq = gcq.gte('created_at', desde)
@@ -54,7 +54,8 @@ export default function AdminHome() {
           .filter((t) => t.giftcards?.empresa_id === e.id)
           .reduce((a, t) => a + Number(t.monto), 0)
         const clientes = new Set(propias.filter((c) => c.cliente_id).map((c) => c.cliente_id)).size
-        return { id: e.id, nombre: e.nombre, activo: e.activo, emitido, usado, cantidad: propias.length, clientes }
+        const canjeadas = propias.filter((c) => c.estado === 'agotada').length
+        return { id: e.id, nombre: e.nombre, activo: e.activo, emitido, usado, cantidad: propias.length, clientes, canjeadas }
       })
 
       setEmpresas(porEmpresa.sort((a, b) => (b.activo ? 1 : 0) - (a.activo ? 1 : 0)))
@@ -122,10 +123,11 @@ export default function AdminHome() {
                         <span className="text-xs font-normal text-indigo-600">Ver gift cards →</span>
                       </span>
                     </h3>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-3 gap-3">
                       <MiniStat label="Total emitido" value={money(e.emitido)} />
                       <MiniStat label="Total usado" value={money(e.usado)} />
                       <MiniStat label="Gift cards" value={e.cantidad} />
+                      <MiniStat label="Canjeadas" value={e.canjeadas} />
                       <MiniStat label="Clientes" value={e.clientes} />
                     </div>
                   </Card>
