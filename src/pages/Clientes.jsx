@@ -160,7 +160,7 @@ export default function Clientes() {
 
     // Dropdown para grupo
     if (grupos.length > 0) {
-      const lista = grupos.map((g) => g.nombre).join(',')
+      const lista = ['Sin grupo', ...grupos.map((g) => g.nombre)].join(',')
       for (let r = 2; r <= 1001; r++) {
         ws.getCell(`F${r}`).dataValidation = {
           type: 'list',
@@ -216,9 +216,10 @@ export default function Clientes() {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errores.push({ num, nombre, motivo: 'Email inválido' }); continue }
         if (codigo_cliente && !/^[A-Z0-9]{5}$/.test(codigo_cliente)) { errores.push({ num, nombre, motivo: `Código de cliente inválido: "${codigo_cliente}" (debe tener 5 caracteres alfanuméricos)` }); continue }
 
-        // Resolver grupo por nombre
-        const grupo = grupos.find((g) => g.nombre.toLowerCase() === grupoNombre.toLowerCase())
-        if (grupoNombre && !grupo) { errores.push({ num, nombre, motivo: `Grupo no encontrado: "${grupoNombre}"` }); continue }
+        // Resolver grupo por nombre ("Sin grupo" o vacío → null)
+        const sinGrupo = !grupoNombre || grupoNombre.toLowerCase() === 'sin grupo'
+        const grupo = sinGrupo ? null : grupos.find((g) => g.nombre.toLowerCase() === grupoNombre.toLowerCase())
+        if (!sinGrupo && !grupo) { errores.push({ num, nombre, motivo: `Grupo no encontrado: "${grupoNombre}"` }); continue }
 
         const payload = {
           nombre,
