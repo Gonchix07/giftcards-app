@@ -685,12 +685,10 @@ export default function GiftCards() {
                       : '—'}
                   </td>
                   <td data-label="Uso">
-                    {Number(c.saldo) === 0 ? (
-                      <Badge color="slate">total</Badge>
-                    ) : Number(c.saldo) < Number(c.monto_max) ? (
+                    {c.uso_parcial ? (
                       <Badge color="amber">parcial</Badge>
                     ) : (
-                      <span className="text-slate-300">—</span>
+                      <Badge color="slate">total</Badge>
                     )}
                   </td>
                   <td data-label="Estado">
