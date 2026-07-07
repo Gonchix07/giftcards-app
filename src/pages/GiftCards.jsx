@@ -480,9 +480,10 @@ export default function GiftCards() {
             onChange={(e) => setForm({ ...form, origen: e.target.value })}
           >
             <option value="">— Sin especificar —</option>
-            <option value="Regalo Interno">Regalo Interno</option>
+            <option value="Acuerdos y convenios">Acuerdos y convenios</option>
             <option value="Empresa">Empresa</option>
             <option value="Publicidad">Publicidad</option>
+            <option value="Regalo Interno">Regalo Interno</option>
           </Select>
           <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
             <input
@@ -565,9 +566,10 @@ export default function GiftCards() {
             onChange={(e) => setMasivo({ ...masivo, origen: e.target.value })}
           >
             <option value="">— Sin especificar —</option>
-            <option value="Regalo Interno">Regalo Interno</option>
+            <option value="Acuerdos y convenios">Acuerdos y convenios</option>
             <option value="Empresa">Empresa</option>
             <option value="Publicidad">Publicidad</option>
+            <option value="Regalo Interno">Regalo Interno</option>
           </Select>
           <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
             <input
