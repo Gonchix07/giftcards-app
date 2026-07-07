@@ -22,7 +22,7 @@ export default function Reportes() {
           .order('created_at', { ascending: false }),
         supabase
           .from('transacciones')
-          .select('*, giftcards(codigo, empresas(nombre), clientes(nombre, dni, codigo_cliente))')
+          .select('*, giftcards(codigo, origen, empresas(nombre), clientes(nombre, dni, codigo_cliente))')
           .order('created_at', { ascending: false }),
         supabase.from('auditoria').select('*').order('fecha', { ascending: false }).limit(1000),
       ])
@@ -61,6 +61,7 @@ export default function Reportes() {
         c.saldo,
         c.fecha_vencimiento,
         c.estado,
+        c.origen,
       ],
       qSaldos
     )
@@ -77,6 +78,7 @@ export default function Reportes() {
         t.monto,
         t.saldo_resultante,
         t.cajero_email,
+        t.giftcards?.origen,
       ],
       qUsos
     )
@@ -153,6 +155,7 @@ export default function Reportes() {
                     { label: 'Usado', get: (r) => Number(r.monto_max) - Number(r.saldo) },
                     { label: 'Vencimiento', get: (r) => r.fecha_vencimiento || '' },
                     { label: 'Estado', get: (r) => r.estado },
+                    { label: 'Origen', get: (r) => r.origen || '' },
                   ],
                   'saldos.csv'
                 )
@@ -174,6 +177,7 @@ export default function Reportes() {
                   <th>Saldo</th>
                   <th>Vence</th>
                   <th>Estado</th>
+                  <th>Origen</th>
                 </tr>
               </thead>
               <tbody className="text-center">
@@ -200,11 +204,12 @@ export default function Reportes() {
                         <Badge color={estadoColor[c.estado]}>{c.estado}</Badge>
                       )}
                     </td>
+                    <td data-label="Origen">{c.origen || '—'}</td>
                   </tr>
                 ))}
                 {cardsFiltrado.length === 0 && (
                   <tr>
-                    <td colSpan="9" className="py-6 text-center text-slate-400">
+                    <td colSpan="10" className="py-6 text-center text-slate-400">
                       {qSaldos ? 'Sin resultados para el filtro' : 'Sin gift cards'}
                     </td>
                   </tr>
@@ -237,6 +242,7 @@ export default function Reportes() {
                     { label: 'Monto', get: (r) => r.monto },
                     { label: 'SaldoResultante', get: (r) => r.saldo_resultante },
                     { label: 'Cajero', get: (r) => r.cajero_email },
+                    { label: 'Origen', get: (r) => r.giftcards?.origen || '' },
                   ],
                   'usos.csv'
                 )
@@ -256,6 +262,7 @@ export default function Reportes() {
                   <th>Monto</th>
                   <th>Saldo result.</th>
                   <th>Cajero</th>
+                  <th>Origen</th>
                 </tr>
               </thead>
               <tbody className="text-center">
@@ -268,11 +275,12 @@ export default function Reportes() {
                     <td className="font-medium" data-label="Monto">{money(t.monto)}</td>
                     <td className="text-slate-500" data-label="Saldo result.">{money(t.saldo_resultante)}</td>
                     <td className="text-slate-500" data-label="Cajero">{t.cajero_email || '—'}</td>
+                    <td data-label="Origen">{t.giftcards?.origen || '—'}</td>
                   </tr>
                 ))}
                 {txsFiltrado.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="py-6 text-center text-slate-400">
+                    <td colSpan="8" className="py-6 text-center text-slate-400">
                       {qUsos ? 'Sin resultados para el filtro' : 'Sin usos registrados'}
                     </td>
                   </tr>
