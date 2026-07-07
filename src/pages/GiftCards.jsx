@@ -639,6 +639,7 @@ export default function GiftCards() {
                 <th>Máx.</th>
                 <th>Saldo</th>
                 <th>Vence</th>
+                <th>Uso</th>
                 <th>Estado</th>
                 <th></th>
               </tr>
@@ -683,6 +684,15 @@ export default function GiftCards() {
                       ? new Date(c.fecha_vencimiento + 'T00:00:00').toLocaleDateString('es-AR')
                       : '—'}
                   </td>
+                  <td data-label="Uso">
+                    {Number(c.saldo) === 0 ? (
+                      <Badge color="slate">total</Badge>
+                    ) : Number(c.saldo) < Number(c.monto_max) ? (
+                      <Badge color="amber">parcial</Badge>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
+                  </td>
                   <td data-label="Estado">
                     {vencida(c) ? (
                       <Badge color="red">vencida</Badge>
@@ -704,7 +714,7 @@ export default function GiftCards() {
               ))}
               {cardsFiltradas.length === 0 && (
                 <tr>
-                  <td colSpan="9" className="py-6 text-center text-slate-400">
+                  <td colSpan="10" className="py-6 text-center text-slate-400">
                     {filtroEmpresa ? 'Esta campaña no tiene gift cards' : 'Sin gift cards todavía'}
                   </td>
                 </tr>
