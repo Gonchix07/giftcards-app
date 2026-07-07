@@ -482,7 +482,7 @@ export default function GiftCards() {
             <option value="">— Sin especificar —</option>
             <option value="Regalo Interno">Regalo Interno</option>
             <option value="Empresa">Empresa</option>
-            <option value="Regalo Particular">Regalo Particular</option>
+            <option value="Publicidad">Publicidad</option>
           </Select>
           <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
             <input
@@ -567,7 +567,7 @@ export default function GiftCards() {
             <option value="">— Sin especificar —</option>
             <option value="Regalo Interno">Regalo Interno</option>
             <option value="Empresa">Empresa</option>
-            <option value="Regalo Particular">Regalo Particular</option>
+            <option value="Publicidad">Publicidad</option>
           </Select>
           <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
             <input
