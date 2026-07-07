@@ -56,7 +56,7 @@ export default function GiftCards() {
   const [clientes, setClientes] = useState([])
   const [grupos, setGrupos] = useState([])
   const [comercios, setComercios] = useState([])
-  const [form, setForm] = useState({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: fechaDefault(), uso_parcial: true })
+  const [form, setForm] = useState({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: fechaDefault(), uso_parcial: true, origen: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [qrCard, setQrCard] = useState(null)
@@ -67,7 +67,7 @@ export default function GiftCards() {
   const qrDownloadRef = useRef(null) // QR con fondo blanco para composición sobre template
 
   // Generación masiva
-  const [masivo, setMasivo] = useState({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: fechaDefault(), grupo_id: '', enviarEmails: false, uso_parcial: true })
+  const [masivo, setMasivo] = useState({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: fechaDefault(), grupo_id: '', enviarEmails: false, uso_parcial: true, origen: '' })
   const [masivoError, setMasivoError] = useState('')
   const [masivoMsg, setMasivoMsg] = useState('')
   const [masivoLoading, setMasivoLoading] = useState(false)
@@ -131,12 +131,13 @@ export default function GiftCards() {
           saldo: monto,
           fecha_vencimiento: form.fecha_vencimiento || null,
           uso_parcial: form.uso_parcial,
+          origen: form.origen || null,
         })
         .select('*, empresas(nombre, logo_url, comercio), clientes(nombre, dni, email)')
         .single()
       if (!error) {
         setLoading(false)
-        setForm({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: fechaDefault(), uso_parcial: true })
+        setForm({ empresa_id: '', cliente_id: '', monto_max: '', fecha_vencimiento: fechaDefault(), uso_parcial: true, origen: '' })
         setMailMsg('')
         setQrCard(data)
         load()
@@ -197,6 +198,7 @@ export default function GiftCards() {
       saldo: monto,
       fecha_vencimiento: masivo.fecha_vencimiento || null,
       uso_parcial: masivo.uso_parcial,
+      origen: masivo.origen || null,
     }))
 
     const { error } = await supabase.from('giftcards').insert(filas)
@@ -235,7 +237,7 @@ export default function GiftCards() {
       )
     }
 
-    setMasivo({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: fechaDefault(), grupo_id: '', enviarEmails: false, uso_parcial: true })
+    setMasivo({ empresa_id: '', cantidad: '', monto_max: '', fecha_vencimiento: fechaDefault(), grupo_id: '', enviarEmails: false, uso_parcial: true, origen: '' })
     load()
   }
 
@@ -472,6 +474,16 @@ export default function GiftCards() {
             value={form.fecha_vencimiento}
             onChange={(e) => setForm({ ...form, fecha_vencimiento: e.target.value })}
           />
+          <Select
+            label="Origen"
+            value={form.origen}
+            onChange={(e) => setForm({ ...form, origen: e.target.value })}
+          >
+            <option value="">— Sin especificar —</option>
+            <option value="Regalo Interno">Regalo Interno</option>
+            <option value="Empresa">Empresa</option>
+            <option value="Regalo Particular">Regalo Particular</option>
+          </Select>
           <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
             <input
               type="checkbox"
@@ -547,6 +559,16 @@ export default function GiftCards() {
             value={masivo.fecha_vencimiento}
             onChange={(e) => setMasivo({ ...masivo, fecha_vencimiento: e.target.value })}
           />
+          <Select
+            label="Origen"
+            value={masivo.origen}
+            onChange={(e) => setMasivo({ ...masivo, origen: e.target.value })}
+          >
+            <option value="">— Sin especificar —</option>
+            <option value="Regalo Interno">Regalo Interno</option>
+            <option value="Empresa">Empresa</option>
+            <option value="Regalo Particular">Regalo Particular</option>
+          </Select>
           <label className="flex items-center gap-2 text-sm sm:col-span-2 lg:col-span-4">
             <input
               type="checkbox"
