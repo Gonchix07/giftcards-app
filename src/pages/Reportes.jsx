@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import * as XLSX from 'xlsx'
 import { supabase } from '../supabaseClient'
 import { Card, Badge, Button, Input, money } from '../components/ui'
 
@@ -100,16 +101,15 @@ export default function Reportes() {
     return campos.join(' ').toLowerCase().includes(qAudit.trim().toLowerCase())
   })
 
-  function exportCSV(rows, headers, filename) {
-    const csv = [
-      headers.map((h) => h.label).join(','),
-      ...rows.map((r) => headers.map((h) => `"${String(h.get(r) ?? '').replace(/"/g, '""')}"`).join(',')),
-    ].join('\n')
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
+  function exportXLSX(rows, headers, filename) {
+    const data = [
+      headers.map((h) => h.label),
+      ...rows.map((r) => headers.map((h) => h.get(r) ?? '')),
+    ]
+    const ws = XLSX.utils.aoa_to_sheet(data)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Datos')
+    XLSX.writeFile(wb, filename)
   }
 
   return (
@@ -142,7 +142,7 @@ export default function Reportes() {
             <Button
               variant="secondary"
               onClick={() =>
-                exportCSV(
+                exportXLSX(
                   cardsFiltrado,
                   [
                     { label: 'Codigo', get: (r) => r.codigo },
@@ -150,18 +150,18 @@ export default function Reportes() {
                     { label: 'Cliente', get: (r) => r.clientes?.nombre },
                     { label: 'DNI', get: (r) => r.clientes?.dni },
                     { label: 'CodigoCliente', get: (r) => r.clientes?.codigo_cliente },
-                    { label: 'MontoMax', get: (r) => r.monto_max },
-                    { label: 'Saldo', get: (r) => r.saldo },
+                    { label: 'MontoMax', get: (r) => Number(r.monto_max) },
+                    { label: 'Saldo', get: (r) => Number(r.saldo) },
                     { label: 'Usado', get: (r) => Number(r.monto_max) - Number(r.saldo) },
                     { label: 'Vencimiento', get: (r) => r.fecha_vencimiento || '' },
                     { label: 'Estado', get: (r) => r.estado },
                     { label: 'Origen', get: (r) => r.origen || '' },
                   ],
-                  'saldos.csv'
+                  'saldos.xlsx'
                 )
               }
             >
-              ⬇️ CSV
+              ⬇️ Excel
             </Button>
           </div>
           <div className="overflow-x-auto">
@@ -231,7 +231,7 @@ export default function Reportes() {
             <Button
               variant="secondary"
               onClick={() =>
-                exportCSV(
+                exportXLSX(
                   txsFiltrado,
                   [
                     { label: 'Fecha', get: (r) => new Date(r.created_at).toLocaleString('es-AR') },
@@ -239,16 +239,16 @@ export default function Reportes() {
                     { label: 'Campaña', get: (r) => r.giftcards?.empresas?.nombre },
                     { label: 'Cliente', get: (r) => r.giftcards?.clientes?.nombre },
                     { label: 'CodigoCliente', get: (r) => r.giftcards?.clientes?.codigo_cliente },
-                    { label: 'Monto', get: (r) => r.monto },
-                    { label: 'SaldoResultante', get: (r) => r.saldo_resultante },
+                    { label: 'Monto', get: (r) => Number(r.monto) },
+                    { label: 'SaldoResultante', get: (r) => Number(r.saldo_resultante) },
                     { label: 'Cajero', get: (r) => r.cajero_email },
                     { label: 'Origen', get: (r) => r.giftcards?.origen || '' },
                   ],
-                  'usos.csv'
+                  'usos.xlsx'
                 )
               }
             >
-              ⬇️ CSV
+              ⬇️ Excel
             </Button>
           </div>
           <div className="overflow-x-auto">
