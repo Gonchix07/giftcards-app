@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Select, Card } from '../components/ui'
@@ -118,6 +120,137 @@ export default function Clientes() {
     else {
       auditar('cliente_eliminado', cl?.nombre, `Cliente "${cl?.nombre}" (DNI: ${cl?.dni}) eliminado`)
       load()
+    }
+  }
+
+  // ---------- Importación masiva ----------
+  const fileRef = useRef(null)
+  const [importando, setImportando] = useState(false)
+  const [importResult, setImportResult] = useState(null)
+
+  async function descargarPlantilla() {
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Clientes')
+
+    ws.columns = [
+      { header: 'nombre *', key: 'nombre', width: 28 },
+      { header: 'dni *', key: 'dni', width: 14 },
+      { header: 'email *', key: 'email', width: 30 },
+      { header: 'telefono (opcional)', key: 'telefono', width: 18 },
+      { header: 'codigo_cliente (opcional, 5 car.)', key: 'codigo_cliente', width: 28 },
+      { header: 'grupo (opcional)', key: 'grupo', width: 22 },
+    ]
+
+    ws.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4338CA' } }
+      cell.alignment = { vertical: 'middle', horizontal: 'center' }
+    })
+    ws.getRow(1).height = 22
+
+    // Fila de ejemplo
+    ws.addRow({
+      nombre: 'Juan Pérez',
+      dni: '30123456',
+      email: 'juan@ejemplo.com',
+      telefono: '223-5937766',
+      codigo_cliente: 'AB123',
+      grupo: grupos[0]?.nombre || '',
+    })
+
+    // Dropdown para grupo
+    if (grupos.length > 0) {
+      const lista = grupos.map((g) => g.nombre).join(',')
+      for (let r = 2; r <= 1001; r++) {
+        ws.getCell(`F${r}`).dataValidation = {
+          type: 'list',
+          allowBlank: true,
+          formulae: [`"${lista}"`],
+          showErrorMessage: true,
+          errorTitle: 'Grupo inválido',
+          error: 'Elegí un grupo de la lista o dejalo vacío',
+        }
+      }
+    }
+
+    const buffer = await wb.xlsx.writeBuffer()
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'plantilla_clientes.xlsx'
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  async function importarArchivo(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setImportResult(null)
+    setImportando(true)
+
+    try {
+      const buffer = await file.arrayBuffer()
+      const wb = XLSX.read(buffer, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const filas = XLSX.utils.sheet_to_json(ws, { defval: '' })
+
+      const ok = []
+      const errores = []
+
+      for (const [i, fila] of filas.entries()) {
+        const num = i + 2
+        const nombre = String(fila['nombre *'] || fila['nombre'] || '').trim()
+        const dni = String(fila['dni *'] || fila['dni'] || '').trim()
+        const email = String(fila['email *'] || fila['email'] || '').trim()
+        const telefono = String(fila['telefono (opcional)'] || fila['telefono'] || '').trim()
+        const codigo_cliente = String(fila['codigo_cliente (opcional, 5 car.)'] || fila['codigo_cliente'] || '').trim().toUpperCase()
+        const grupoNombre = String(fila['grupo (opcional)'] || fila['grupo'] || '').trim()
+
+        // Validaciones
+        if (!nombre) { errores.push({ num, nombre: '—', motivo: 'Nombre vacío' }); continue }
+        if (!dni) { errores.push({ num, nombre, motivo: 'DNI vacío' }); continue }
+        if (!email) { errores.push({ num, nombre, motivo: 'Email vacío' }); continue }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errores.push({ num, nombre, motivo: 'Email inválido' }); continue }
+        if (codigo_cliente && !/^[A-Z0-9]{5}$/.test(codigo_cliente)) { errores.push({ num, nombre, motivo: `Código de cliente inválido: "${codigo_cliente}" (debe tener 5 caracteres alfanuméricos)` }); continue }
+
+        // Resolver grupo por nombre
+        const grupo = grupos.find((g) => g.nombre.toLowerCase() === grupoNombre.toLowerCase())
+        if (grupoNombre && !grupo) { errores.push({ num, nombre, motivo: `Grupo no encontrado: "${grupoNombre}"` }); continue }
+
+        const payload = {
+          nombre,
+          dni,
+          email,
+          telefono: telefono || null,
+          codigo_cliente: codigo_cliente || null,
+          grupo_id: grupo?.id || null,
+        }
+
+        const { error } = await supabase.from('clientes').insert(payload)
+        if (error) {
+          const m = error.message
+          const motivo = m.includes('codigo_cliente')
+            ? 'Ya existe un cliente con ese código'
+            : m.includes('dni')
+            ? 'Ya existe un cliente con ese DNI'
+            : m.includes('email')
+            ? 'Ya existe un cliente con ese email'
+            : m
+          errores.push({ num, nombre, motivo })
+        } else {
+          auditar('cliente_creado', nombre, `Cliente "${nombre}" (DNI: ${dni}) creado por importación masiva`)
+          ok.push(`${nombre} (${dni})`)
+        }
+      }
+
+      setImportResult({ ok, errores })
+      if (ok.length > 0) load()
+    } catch (err) {
+      setImportResult({ ok: [], errores: [{ num: '—', nombre: '—', motivo: 'No se pudo leer el archivo: ' + err.message }] })
+    } finally {
+      setImportando(false)
     }
   }
 
@@ -252,7 +385,62 @@ export default function Clientes() {
         </Card>
       </div>
 
-      <Card className="lg:col-span-2 min-w-0">
+      <Card className="lg:col-span-2 min-w-0 h-fit">
+        <h2 className="font-bold text-base mb-3">Importar clientes</h2>
+        <p className="text-xs text-slate-500 mb-3">
+          Descargá la plantilla, completala y subila para crear múltiples clientes a la vez. El campo grupo tiene lista desplegable en el Excel.
+        </p>
+        <div className="flex flex-wrap gap-2 items-center mb-4">
+          <Button variant="secondary" onClick={descargarPlantilla}>
+            ⬇️ Descargar plantilla
+          </Button>
+          <Button variant="secondary" disabled={importando} onClick={() => fileRef.current?.click()}>
+            {importando ? 'Importando…' : '⬆️ Subir archivo Excel'}
+          </Button>
+          <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={importarArchivo} />
+        </div>
+
+        {importResult && (
+          <div className="space-y-3 text-xs">
+            {importResult.ok.length > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="font-semibold text-green-700 mb-1">✅ {importResult.ok.length} cliente{importResult.ok.length !== 1 ? 's' : ''} creado{importResult.ok.length !== 1 ? 's' : ''}</p>
+                <ul className="list-disc list-inside text-green-600 space-y-0.5">
+                  {importResult.ok.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              </div>
+            )}
+            {importResult.errores.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="font-semibold text-red-700 mb-2">❌ {importResult.errores.length} fila{importResult.errores.length !== 1 ? 's' : ''} con error</p>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-left text-red-500 border-b border-red-200">
+                      <th className="pb-1 pr-3">Fila</th>
+                      <th className="pb-1 pr-3">Nombre</th>
+                      <th className="pb-1">Motivo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importResult.errores.map((e, i) => (
+                      <tr key={i} className="border-b border-red-100 last:border-0">
+                        <td className="py-1 pr-3 text-slate-500">{e.num}</td>
+                        <td className="py-1 pr-3 font-medium">{e.nombre}</td>
+                        <td className="py-1 text-red-600">{e.motivo}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {importResult.ok.length === 0 && importResult.errores.length === 0 && (
+              <p className="text-slate-400">El archivo no tenía filas de datos.</p>
+            )}
+          </div>
+        )}
+      </Card>
+
+      <Card className="lg:col-span-3 min-w-0">
         <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
           <h2 className="font-bold text-base">Clientes ({clientes.length})</h2>
           <Input
