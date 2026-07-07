@@ -167,6 +167,7 @@ export default function Clientes() {
           allowBlank: true,
           formulae: [`"${lista}"`],
           showErrorMessage: true,
+          errorStyle: 'warning',
           errorTitle: 'Grupo inválido',
           error: 'Elegí un grupo de la lista o dejalo vacío',
         }
@@ -290,72 +291,72 @@ export default function Clientes() {
   )
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6 text-sm">
-      <div className="lg:col-span-1 space-y-6">
-        <Card className="h-fit">
-          <h2 className="font-bold text-base mb-4">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <Input
-              label="Nombre *"
-              value={form.nombre}
-              onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-              required
-            />
-            <Input
-              label="DNI *"
-              value={form.dni}
-              onChange={(e) => setForm({ ...form, dni: e.target.value })}
-              required
-            />
-            <Input
-              label="Email *"
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              required
-            />
-            <Input
-              label="Teléfono (opcional)"
-              value={form.telefono}
-              onChange={(e) => setForm({ ...form, telefono: formatTel(e.target.value) })}
-              placeholder="223-5937766"
-              inputMode="numeric"
-              maxLength={11}
-            />
-            <Input
-              label="Código de cliente (opcional, 5 caracteres)"
-              value={form.codigo_cliente}
-              maxLength={5}
-              onChange={(e) =>
-                setForm({ ...form, codigo_cliente: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })
-              }
-            />
-            <Select
-              label="Grupo"
-              value={form.grupo_id}
-              onChange={(e) => setForm({ ...form, grupo_id: e.target.value })}
-            >
-              <option value="">— Sin grupo —</option>
-              {grupos.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.nombre}
-                </option>
-              ))}
-            </Select>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <div className="flex gap-2">
-              <Button type="submit" disabled={loading}>
-                {editId ? 'Guardar' : 'Crear'}
+    <div className="space-y-6 text-sm">
+      {/* Formulario horizontal */}
+      <Card>
+        <h2 className="font-bold text-base mb-4">{editId ? 'Editar cliente' : 'Nuevo cliente'}</h2>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
+          <Input
+            label="Nombre *"
+            value={form.nombre}
+            onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+            required
+          />
+          <Input
+            label="DNI *"
+            value={form.dni}
+            onChange={(e) => setForm({ ...form, dni: e.target.value })}
+            required
+          />
+          <Input
+            label="Email *"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            required
+          />
+          <Input
+            label="Teléfono (opcional)"
+            value={form.telefono}
+            onChange={(e) => setForm({ ...form, telefono: formatTel(e.target.value) })}
+            placeholder="223-5937766"
+            inputMode="numeric"
+            maxLength={11}
+          />
+          <Input
+            label="Código de cliente (opcional, 5 car.)"
+            value={form.codigo_cliente}
+            maxLength={5}
+            onChange={(e) =>
+              setForm({ ...form, codigo_cliente: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '') })
+            }
+          />
+          <Select
+            label="Grupo"
+            value={form.grupo_id}
+            onChange={(e) => setForm({ ...form, grupo_id: e.target.value })}
+          >
+            <option value="">— Sin grupo —</option>
+            {grupos.map((g) => (
+              <option key={g.id} value={g.id}>{g.nombre}</option>
+            ))}
+          </Select>
+          {error && <p className="text-sm text-red-600 sm:col-span-2 lg:col-span-3">{error}</p>}
+          <div className="flex gap-2 sm:col-span-2 lg:col-span-3">
+            <Button type="submit" disabled={loading}>
+              {editId ? 'Guardar' : 'Crear'}
+            </Button>
+            {editId && (
+              <Button type="button" variant="secondary" onClick={reset}>
+                Cancelar
               </Button>
-              {editId && (
-                <Button type="button" variant="secondary" onClick={reset}>
-                  Cancelar
-                </Button>
-              )}
-            </div>
-          </form>
-        </Card>
+            )}
+          </div>
+        </form>
+      </Card>
 
+      {/* Grupos e Importar en la misma fila */}
+      <div className="grid lg:grid-cols-2 gap-6">
         {/* Gestión de grupos */}
         <Card className="h-fit">
           <h2 className="font-bold text-base mb-4">Grupos ({grupos.length})</h2>
@@ -366,79 +367,73 @@ export default function Clientes() {
               onChange={(e) => setNombreGrupo(e.target.value)}
               className="flex-1"
             />
-            <Button type="submit" disabled={grupoLoading}>
-              Agregar
-            </Button>
+            <Button type="submit" disabled={grupoLoading}>Agregar</Button>
           </form>
           {grupoError && <p className="text-sm text-red-600 mt-2">{grupoError}</p>}
           <ul className="mt-4 divide-y">
             {grupos.map((g) => (
               <li key={g.id} className="flex items-center justify-between py-2 text-sm">
                 <span className="font-medium">{g.nombre}</span>
-                <Button variant="ghost" onClick={() => eliminarGrupo(g.id)} title="Eliminar grupo">
-                  🗑️
-                </Button>
+                <Button variant="ghost" onClick={() => eliminarGrupo(g.id)} title="Eliminar grupo">🗑️</Button>
               </li>
             ))}
             {grupos.length === 0 && <li className="py-3 text-center text-slate-400 text-sm">Sin grupos todavía</li>}
           </ul>
         </Card>
-      </div>
 
-      <Card className="lg:col-span-2 min-w-0 h-fit">
-        <h2 className="font-bold text-base mb-3">Importar clientes</h2>
-        <p className="text-xs text-slate-500 mb-3">
-          Descargá la plantilla, completala y subila para crear múltiples clientes a la vez. El campo grupo tiene lista desplegable en el Excel.
-        </p>
-        <div className="flex flex-wrap gap-2 items-center mb-4">
-          <Button variant="secondary" onClick={descargarPlantilla}>
-            ⬇️ Descargar plantilla
-          </Button>
-          <Button variant="secondary" disabled={importando} onClick={() => fileRef.current?.click()}>
-            {importando ? 'Importando…' : '⬆️ Subir archivo Excel'}
-          </Button>
-          <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={importarArchivo} />
-        </div>
-
-        {importResult && (
-          <div className="space-y-3 text-xs">
-            {importResult.ok.length > 0 && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <p className="font-semibold text-green-700 mb-1">✅ {importResult.ok.length} cliente{importResult.ok.length !== 1 ? 's' : ''} creado{importResult.ok.length !== 1 ? 's' : ''}</p>
-                <ul className="list-disc list-inside text-green-600 space-y-0.5">
-                  {importResult.ok.map((item, i) => <li key={i}>{item}</li>)}
-                </ul>
-              </div>
-            )}
-            {importResult.errores.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="font-semibold text-red-700 mb-2">❌ {importResult.errores.length} fila{importResult.errores.length !== 1 ? 's' : ''} con error</p>
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="text-left text-red-500 border-b border-red-200">
-                      <th className="pb-1 pr-3">Fila</th>
-                      <th className="pb-1 pr-3">Nombre</th>
-                      <th className="pb-1">Motivo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {importResult.errores.map((e, i) => (
-                      <tr key={i} className="border-b border-red-100 last:border-0">
-                        <td className="py-1 pr-3 text-slate-500">{e.num}</td>
-                        <td className="py-1 pr-3 font-medium">{e.nombre}</td>
-                        <td className="py-1 text-red-600">{e.motivo}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {importResult.ok.length === 0 && importResult.errores.length === 0 && (
-              <p className="text-slate-400">El archivo no tenía filas de datos.</p>
-            )}
+        {/* Importación masiva */}
+        <Card className="h-fit">
+          <h2 className="font-bold text-base mb-3">Importar clientes</h2>
+          <p className="text-xs text-slate-500 mb-3">
+            Descargá la plantilla, completala y subila para crear múltiples clientes a la vez. El campo grupo tiene lista desplegable en el Excel.
+          </p>
+          <div className="flex flex-wrap gap-2 items-center mb-4">
+            <Button variant="secondary" onClick={descargarPlantilla}>⬇️ Descargar plantilla</Button>
+            <Button variant="secondary" disabled={importando} onClick={() => fileRef.current?.click()}>
+              {importando ? 'Importando…' : '⬆️ Subir archivo Excel'}
+            </Button>
+            <input ref={fileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={importarArchivo} />
           </div>
-        )}
-      </Card>
+          {importResult && (
+            <div className="space-y-3 text-xs">
+              {importResult.ok.length > 0 && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                  <p className="font-semibold text-green-700 mb-1">✅ {importResult.ok.length} cliente{importResult.ok.length !== 1 ? 's' : ''} creado{importResult.ok.length !== 1 ? 's' : ''}</p>
+                  <ul className="list-disc list-inside text-green-600 space-y-0.5">
+                    {importResult.ok.map((item, i) => <li key={i}>{item}</li>)}
+                  </ul>
+                </div>
+              )}
+              {importResult.errores.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="font-semibold text-red-700 mb-2">❌ {importResult.errores.length} fila{importResult.errores.length !== 1 ? 's' : ''} con error</p>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-red-500 border-b border-red-200">
+                        <th className="pb-1 pr-3">Fila</th>
+                        <th className="pb-1 pr-3">Nombre</th>
+                        <th className="pb-1">Motivo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {importResult.errores.map((e, i) => (
+                        <tr key={i} className="border-b border-red-100 last:border-0">
+                          <td className="py-1 pr-3 text-slate-500">{e.num}</td>
+                          <td className="py-1 pr-3 font-medium">{e.nombre}</td>
+                          <td className="py-1 text-red-600">{e.motivo}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {importResult.ok.length === 0 && importResult.errores.length === 0 && (
+                <p className="text-slate-400">El archivo no tenía filas de datos.</p>
+              )}
+            </div>
+          )}
+        </Card>
+      </div>
 
       <Card className="lg:col-span-3 min-w-0">
         <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
