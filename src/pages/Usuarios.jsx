@@ -221,10 +221,11 @@ export default function Usuarios() {
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6 text-sm">
-      <Card className="lg:col-span-1 h-fit">
+    <div className="space-y-6 text-sm">
+      {/* Formulario horizontal */}
+      <Card>
         <h2 className="font-bold text-base mb-4">{editId ? 'Editar usuario' : 'Nuevo usuario'}</h2>
-        <form onSubmit={guardar} className="space-y-3">
+        <form onSubmit={guardar} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <Input
             label="Email *"
             type="email"
@@ -233,7 +234,7 @@ export default function Usuarios() {
             required
           />
           <Input
-            label={editId ? 'Contraseña (dejar vacío para no cambiarla)' : 'Contraseña * (mín. 6)'}
+            label={editId ? 'Contraseña (vacío = sin cambiar)' : 'Contraseña * (mín. 6)'}
             type="text"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -253,14 +254,12 @@ export default function Usuarios() {
           >
             <option value="">— Sin restricción —</option>
             {comercios.map((c) => (
-              <option key={c.nombre} value={c.nombre}>
-                {c.nombre}
-              </option>
+              <option key={c.nombre} value={c.nombre}>{c.nombre}</option>
             ))}
           </Select>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          {msg && <p className="text-sm text-green-700">{msg}</p>}
-          <div className="flex gap-2">
+          {error && <p className="text-sm text-red-600 sm:col-span-2 lg:col-span-4">{error}</p>}
+          {msg && <p className="text-sm text-green-700 sm:col-span-2 lg:col-span-4">{msg}</p>}
+          <div className="flex gap-2 sm:col-span-2 lg:col-span-4">
             <Button type="submit" disabled={loading}>
               {loading ? 'Guardando…' : editId ? 'Guardar' : 'Crear usuario'}
             </Button>
@@ -273,7 +272,8 @@ export default function Usuarios() {
         </form>
       </Card>
 
-      <Card className="lg:col-span-2 min-w-0 h-fit">
+      {/* Importación */}
+      <Card className="min-w-0 h-fit">
         <h2 className="font-bold text-base mb-3">Importar usuarios</h2>
         <p className="text-xs text-slate-500 mb-3">
           Descargá la plantilla, completala y subila para crear múltiples usuarios a la vez. Los rol y comercio tienen lista desplegable en el Excel.
@@ -332,7 +332,7 @@ export default function Usuarios() {
         )}
       </Card>
 
-      <Card className="lg:col-span-3 min-w-0">
+      <Card className="min-w-0">
         <h2 className="font-bold text-base mb-4">Usuarios ({usuarios.length})</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-xs responsive-table">
