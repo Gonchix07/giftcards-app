@@ -306,6 +306,11 @@ begin
   select email, role into v_email, v_rol from public.profiles where id = auth.uid();
 
   if (tg_op = 'INSERT') then
+    -- Las altas por API (service role, sin auth.uid) registran su propia
+    -- auditoría con la atribución del admin llamante. Evitamos el duplicado.
+    if auth.uid() is null then
+      return new;
+    end if;
     v_codigo := new.codigo;
     v_accion := 'creacion';
     v_detalle := 'Monto máximo ' || new.monto_max ||

@@ -92,5 +92,14 @@ export default async function handler(req, res) {
     return res.status(409).json({ error: motivo })
   }
 
+  // Registrar el alta en la auditoría (atribuida al admin que llama a la API)
+  await admin.from('auditoria').insert({
+    usuario_email: ctx.callerEmail,
+    usuario_rol: 'admin',
+    accion: 'cliente_creado',
+    cliente: data.nombre,
+    detalle: `Cliente "${data.nombre}" (DNI: ${data.dni}, email: ${data.email}) creado vía API`,
+  })
+
   return res.status(201).json(data)
 }

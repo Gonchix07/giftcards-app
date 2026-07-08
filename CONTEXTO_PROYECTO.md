@@ -14,7 +14,9 @@
 giftcards-app/
 ├── api/
 │   ├── admin-users.js       # CRUD usuarios (service_role key)
-│   └── send-giftcard.js     # Envío email con Brevo
+│   ├── send-giftcard.js     # Envío email con Brevo
+│   ├── clientes.js          # REST API: importar cliente externo (POST)
+│   └── giftcards.js         # REST API: crear gift card con cliente existente (POST)
 ├── src/
 │   ├── components/
 │   │   ├── ClienteCombo.jsx  # Select editable con filtro (nombre/DNI/código)
@@ -30,7 +32,7 @@ giftcards-app/
 │       ├── Clientes.jsx      # CRUD clientes + grupos + auditoría
 │       ├── GiftCards.jsx     # Emisión individual/masiva + popup con template
 │       ├── Cajero.jsx        # Escaneo QR + uso parcial/total + PDF rendición
-│       ├── Reportes.jsx      # Saldos / Usos / Auditoría + CSV export
+│       ├── Reportes.jsx      # Saldos / Usos / Auditoría + Excel export (.xlsx)
 │       ├── Usuarios.jsx      # CRUD usuarios con roles
 │       ├── Mails.jsx         # Editor plantilla email HTML
 │       └── Ayuda.jsx         # Manual web con búsqueda
@@ -57,11 +59,11 @@ Badge visual en navbar: admin=amber, cajero=green, atencion=sky, tesoreria=viole
 ---
 
 ## Base de datos — tablas principales
-- **empresas**: id, nombre, cuit, comercio (nombre del comercio), activo
+- **empresas**: id, nombre, comercio (nombre del comercio), activo — campo `cuit` eliminado del front
 - **comercios**: id, nombre, logo_url, color, template_url, qr_posicion ('izquierda'|'derecha')
 - **clientes**: id, nombre, dni, email (obligatorio), telefono (opcional, máscara 223-XXXXXXX), codigo_cliente (5 chars alfanum, único, opcional), grupo_id
 - **grupos**: id, nombre
-- **giftcards**: id, codigo (8 chars único), empresa_id, cliente_id (inmutable una vez asignado), monto_max, saldo, fecha_vencimiento, estado (activa/agotada/anulada), uso_parcial (boolean)
+- **giftcards**: id, codigo (8 chars único), empresa_id, cliente_id (inmutable una vez asignado), monto_max, saldo, fecha_vencimiento, estado (activa/agotada/anulada), uso_parcial (boolean), origen (text: 'Acuerdos y convenios'|'Empresa'|'Publicidad'|'Regalo Interno'|null)
 - **profiles**: id, email, role, comercio (solo cajeros)
 - **auditoria**: id, fecha, usuario_email, usuario_rol, accion, giftcard_codigo, empresa, cliente, detalle
 - **config_email**: plantilla HTML con variables {nombre} {codigo} {monto} {empresa} {comercio} {vencimiento}
@@ -76,6 +78,7 @@ Badge visual en navbar: admin=amber, cajero=green, atencion=sky, tesoreria=viole
 migration_uso_parcial.sql       → agrega columna uso_parcial a giftcards
 migration_telefono.sql          → agrega columna telefono a clientes
 migration_template_gifcard.sql  → agrega template_url y qr_posicion a comercios
+migration_auditoria_api.sql     → trigger de giftcards omite el alta automática cuando auth.uid es null (altas por API)
 ```
 
 ---
@@ -104,6 +107,7 @@ migration_template_gifcard.sql  → agrega template_url y qr_posicion a comercio
 | Usuarios | usuario_creado, usuario_modificado, usuario_eliminado (api/admin-users.js) |
 | Empresas | empresa_creada, empresa_modificada, empresa_eliminada, comercio_creado, comercio_modificado, comercio_eliminado |
 | Clientes | cliente_creado, cliente_modificado, cliente_eliminado, grupo_creado, grupo_eliminado |
+| API externa | cliente_creado (api/clientes.js), creacion de giftcard (api/giftcards.js) — ambos con detalle "vía API" |
 
 ---
 
@@ -129,6 +133,65 @@ migration_template_gifcard.sql  → agrega template_url y qr_posicion a comercio
 - POST: envía email con QR adjunto (PNG base64)
 - Lee plantilla de tabla `config_email`
 - Usa `BREVO_API_KEY` y `MAIL_FROM` (env vars en Vercel)
+
+### clientes.js — REST API externa
+- POST `/api/clientes`: crea un cliente desde un sistema externo
+- Requiere `Authorization: Bearer <token_admin>`
+- Campos: `nombre*`, `dni*`, `email*`, `telefono`, `codigo_cliente` (5 alfanum), `grupo` (nombre) o `grupo_id` (UUID)
+- Respuestas: 201 (creado), 400 (validación), 403 (no admin), 409 (DNI/email/código duplicado)
+- Escribe en `auditoria` (`cliente_creado`, detalle "creado vía API") atribuido al admin llamante
+
+### giftcards.js — REST API externa
+- POST `/api/giftcards`: crea una gift card asignada a un cliente existente
+- Requiere `Authorization: Bearer <token_admin>`
+- Identifica al cliente por `dni*` + `email*` (ambos deben coincidir)
+- Campos: `empresa*` (nombre campaña), `monto_max*`, `fecha_vencimiento` (YYYY-MM-DD), `uso_parcial` (boolean, default true), `origen`
+- Respuestas: 201 (creado), 400 (validación/email no coincide/campaña inactiva), 403 (no admin), 404 (cliente/campaña no encontrado)
+- Escribe en `auditoria` (`creacion`, detalle "alta vía API") atribuido al admin llamante. El trigger DB omite su registro automático cuando el alta viene por service role (sin `auth.uid`), para evitar duplicados
+
+#### Cómo obtener el Bearer token desde un sistema externo
+```http
+POST https://hmzzpwjsgfahsuaqaubt.supabase.co/auth/v1/token?grant_type=password
+Content-Type: application/json
+
+{ "email": "admin@...", "password": "..." }
+```
+El `access_token` de la respuesta se usa como `Bearer`. Expira en 1 hora; renovar con `refresh_token`.
+
+---
+
+## Cambios recientes (sesión julio 2026)
+
+### Nomenclatura
+- Todas las referencias a "Empresa/s" en el front cambiadas a "Campaña/s". La tabla DB sigue llamándose `empresas`.
+- Campo `cuit` eliminado de Empresas (front y formulario).
+
+### GiftCards — campo Origen
+- Nuevo campo `origen` en emisión individual y masiva. Opciones (orden alfabético): Acuerdos y convenios, Empresa, Publicidad, Regalo Interno.
+- Columna Origen agregada en Reportes (Saldos y Usos) y en exports Excel.
+- Columna **Uso** en tabla de gift cards: muestra `parcial` (amber) o `total` (slate) según el flag `uso_parcial` configurado al generar.
+- **Migración pendiente**: `ALTER TABLE giftcards ADD COLUMN origen text;`
+
+### Importación masiva (Excel)
+- **Usuarios**: importación por Excel con plantilla descargable (dropdowns de rol y comercio con ExcelJS). Layout: formulario horizontal + importación + tabla.
+- **Clientes**: importación por Excel con plantilla descargable (dropdown de grupo incluye "Sin grupo"). Layout: formulario horizontal + grupos e importación en misma fila + tabla.
+
+### Exports
+- Reportes Saldos y Usos exportan como `.xlsx` (antes CSV). Usa SheetJS (`xlsx`).
+- Auditoría sigue exportando como CSV.
+
+### Layouts reorganizados
+- **GiftCards**: formularios en grid horizontal `lg:grid-cols-4`.
+- **Usuarios**: formulario horizontal + importación debajo + tabla.
+- **Clientes**: formulario horizontal + grupos e importación en misma línea + tabla.
+
+### Dashboard
+- Campañas activas/inactivas con badge y opacidad reducida para inactivas.
+- Stats por campaña: Emitidas, Asignadas, Canjeadas, Efectividad (%).
+- Campañas activas ordenadas primero.
+
+### Login
+- Toggle mostrar/ocultar contraseña (👁️/🙈).
 
 ---
 

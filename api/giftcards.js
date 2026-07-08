@@ -76,7 +76,7 @@ export default async function handler(req, res) {
   // Buscar cliente por DNI
   const { data: cliente } = await admin
     .from('clientes')
-    .select('id, email')
+    .select('id, nombre, email')
     .eq('dni', dni.trim())
     .single()
 
@@ -130,6 +130,19 @@ export default async function handler(req, res) {
   if (error) {
     return res.status(500).json({ error: error.message })
   }
+
+  // Registrar el alta en la auditoría (atribuida al admin que llama a la API).
+  // El trigger de DB omite el registro automático cuando la creación viene por
+  // service role (sin auth.uid), así que este es el único movimiento de 'creacion'.
+  await admin.from('auditoria').insert({
+    usuario_email: ctx.callerEmail,
+    usuario_rol: 'admin',
+    accion: 'creacion',
+    giftcard_codigo: giftcard.codigo,
+    empresa: empresa.trim(),
+    cliente: cliente.nombre,
+    detalle: `Monto máximo ${monto} (asignada al crear) — alta vía API`,
+  })
 
   return res.status(201).json(giftcard)
 }
