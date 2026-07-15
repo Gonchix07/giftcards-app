@@ -52,7 +52,7 @@ giftcards-app/
 | `admin` | Todo |
 | `cajero` | Solo panel cajero (fondo blanco) |
 | `atencion` | GiftCards, Clientes, Reportes |
-| `tesoreria` | Reportes + Dashboard |
+| `tesoreria` | Reportes + Dashboard + GiftCards (generación y gestión) |
 
 Badge visual en navbar: admin=amber, cajero=green, atencion=sky, tesoreria=violet.
 
@@ -79,6 +79,7 @@ migration_uso_parcial.sql       → agrega columna uso_parcial a giftcards
 migration_telefono.sql          → agrega columna telefono a clientes
 migration_template_gifcard.sql  → agrega template_url y qr_posicion a comercios
 migration_auditoria_api.sql     → trigger de giftcards omite el alta automática cuando auth.uid es null (altas por API)
+migration_giftcards_tesoreria.sql → función is_tesoreria() + política RLS para que tesorería escriba en giftcards
 ```
 
 ---
@@ -197,7 +198,7 @@ El `access_token` de la respuesta se usa como `Bearer`. Expira en 1 hora; renova
 
 ## Detalles de implementación importantes
 - **Tablas responsivas**: clase CSS `responsive-table` → stacked cards en mobile (< 1024px)
-- **Formato pesos**: `soloDigitos()` + `formatPesos()` → "$ 1.234.567" mientras se escribe
+- **Formato pesos**: `soloDigitos()` + `formatPesos()` → "$ 1.234.567" mientras se escribe. En Cajero (monto a usar) se admiten decimales con punto: `limpiarMonto()` interpreta el último punto seguido de hasta 2 dígitos como decimal y descarta el resto como separadores de miles
 - **CUIT máscara**: XX-XXXXXXXX-X
 - **Teléfono máscara**: 223-XXXXXXX (hasta 10 dígitos)
 - **Código gift card**: 8 chars alfanum mayúsculas, generado con `crypto.getRandomValues`

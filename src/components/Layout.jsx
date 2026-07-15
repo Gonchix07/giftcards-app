@@ -19,6 +19,7 @@ export default function Layout() {
   const atencionLinks = [{ to: '/atencion', label: 'Atención al cliente', end: true }]
   const tesoreriaLinks = [
     { to: '/admin', label: 'Inicio', end: true },
+    { to: '/admin/giftcards', label: 'Gift Cards' },
     { to: '/admin/reportes', label: 'Reportes' },
   ]
   const links = isAdmin

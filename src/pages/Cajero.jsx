@@ -4,9 +4,22 @@ import { supabase } from '../supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { Button, Input, Card, Badge, money } from '../components/ui'
 
-// Formato de monto: guarda solo dígitos y muestra "$ 1.234.567" mientras se escribe
-const soloDigitos = (s) => (s || '').replace(/\D/g, '')
-const formatPesos = (d) => (d ? '$ ' + Number(d).toLocaleString('es-AR') : '')
+// Formato de monto: admite decimales con punto y muestra "$ 1.234.567.89" mientras se escribe.
+// Como el separador de miles también es ".", el último punto seguido de hasta 2 dígitos
+// se interpreta como decimal; el resto de los puntos se descartan como separadores de miles.
+const limpiarMonto = (s) => {
+  s = (s || '').replace(/[^\d.]/g, '')
+  const i = s.lastIndexOf('.')
+  if (i !== -1 && s.length - i - 1 <= 2) {
+    return s.slice(0, i).replace(/\./g, '') + '.' + s.slice(i + 1)
+  }
+  return s.replace(/\./g, '')
+}
+const formatPesos = (d) => {
+  if (!d) return ''
+  const [ent, dec] = String(d).split('.')
+  return '$ ' + Number(ent || 0).toLocaleString('es-AR') + (dec !== undefined ? '.' + dec : '')
+}
 
 // Fecha de hoy en formato YYYY-MM-DD (hora local)
 function hoyLocal() {
@@ -81,7 +94,7 @@ export default function Cajero() {
     if (!data) return setError('No se encontró ninguna gift card con ese código.')
     setCard(data)
     // Si es de uso total, precarga el saldo completo
-    if (data.uso_parcial === false) setMonto(String(Math.round(Number(data.saldo))))
+    if (data.uso_parcial === false) setMonto(String(Number(data.saldo)))
   }
 
   async function confirmarUso() {
@@ -319,9 +332,9 @@ export default function Cajero() {
               <Input
                 label="Monto a usar"
                 type="text"
-                inputMode="numeric"
+                inputMode="decimal"
                 value={formatPesos(monto)}
-                onChange={(e) => setMonto(soloDigitos(e.target.value))}
+                onChange={(e) => setMonto(limpiarMonto(e.target.value))}
                 placeholder={`Hasta ${money(card.saldo)}`}
                 disabled={card.uso_parcial === false}
               />
@@ -332,7 +345,7 @@ export default function Cajero() {
               )}
               <div className="flex gap-2">
                 {card.uso_parcial !== false && (
-                  <Button variant="secondary" onClick={() => setMonto(String(Math.round(Number(card.saldo))))}>
+                  <Button variant="secondary" onClick={() => setMonto(String(Number(card.saldo)))}>
                     Usar todo
                   </Button>
                 )}

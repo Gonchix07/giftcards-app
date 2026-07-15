@@ -400,6 +400,17 @@ as $$
 $$;
 
 -- ============================================================
+--  Helper: ¿el usuario actual es tesorería?
+-- ============================================================
+create or replace function public.is_tesoreria()
+returns boolean
+language sql
+security definer set search_path = public
+as $$
+  select exists (select 1 from public.profiles where id = auth.uid() and role = 'tesoreria');
+$$;
+
+-- ============================================================
 --  Row Level Security
 -- ============================================================
 alter table public.profiles      enable row level security;
@@ -455,13 +466,16 @@ create policy "clientes admin" on public.clientes
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
 
 -- giftcards: lectura para autenticados (cajero necesita consultar saldo),
--- escritura directa solo admin (el cajero usa la función RPC usar_giftcard)
+-- escritura directa solo admin y tesorería (el cajero usa la función RPC usar_giftcard)
 drop policy if exists "giftcards select" on public.giftcards;
 create policy "giftcards select" on public.giftcards
   for select to authenticated using (true);
 drop policy if exists "giftcards admin" on public.giftcards;
 create policy "giftcards admin" on public.giftcards
   for all to authenticated using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "giftcards tesoreria" on public.giftcards;
+create policy "giftcards tesoreria" on public.giftcards
+  for all to authenticated using (public.is_tesoreria()) with check (public.is_tesoreria());
 
 -- transacciones: lectura para autenticados; inserción solo vía RPC (security definer)
 drop policy if exists "transacciones select" on public.transacciones;

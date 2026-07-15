@@ -21,7 +21,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      {/* Inicio y Reportes: admin y tesorería */}
+      {/* Inicio, Reportes y Gift Cards: admin y tesorería */}
       <Route
         element={
           <ProtectedRoute roles={['tesoreria']}>
@@ -31,6 +31,7 @@ export default function App() {
       >
         <Route path="/admin" element={<AdminHome />} />
         <Route path="/admin/reportes" element={<Reportes />} />
+        <Route path="/admin/giftcards" element={<GiftCards />} />
       </Route>
 
       {/* Resto del admin: solo administrador */}
@@ -43,7 +44,6 @@ export default function App() {
       >
         <Route path="/admin/empresas" element={<Empresas />} />
         <Route path="/admin/clientes" element={<Clientes />} />
-        <Route path="/admin/giftcards" element={<GiftCards />} />
         <Route path="/admin/usuarios" element={<Usuarios />} />
         <Route path="/admin/mails" element={<Mails />} />
       </Route>
